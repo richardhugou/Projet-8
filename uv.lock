@@ -1551,6 +1551,7 @@ name = "projet-8"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
+    { name = "fastapi" },
     { name = "httpx" },
     { name = "imbalanced-learn" },
     { name = "ipykernel" },
@@ -1563,6 +1564,7 @@ dependencies = [
     { name = "pytest" },
     { name = "scikit-learn" },
     { name = "setuptools" },
+    { name = "uvicorn" },
 ]
 
 [package.dev-dependencies]
@@ -1572,6 +1574,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "fastapi", specifier = ">=0.135.1" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "imbalanced-learn", specifier = ">=0.14.1" },
     { name = "ipykernel", specifier = ">=7.2.0" },
@@ -1584,6 +1587,7 @@ requires-dist = [
     { name = "pytest", specifier = ">=9.0.2" },
     { name = "scikit-learn", specifier = ">=1.8.0" },
     { name = "setuptools", specifier = ">=82.0.1" },
+    { name = "uvicorn", specifier = ">=0.42.0" },
 ]
 
 [package.metadata.requires-dev]
