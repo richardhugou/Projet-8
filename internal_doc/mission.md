@@ -4,8 +4,7 @@
 En tant que Data Scientist chez "Prêt à Dépenser", l'objectif est de mettre en production un modèle de scoring (précédemment développé avec MLflow) pour le département "Crédit Express". L'API doit être robuste, déployable via Docker et monitorée en temps réel.
 
 ## Objectifs Principaux
-1.  **Simplification du Modèle (Phase 0)** : Ré-entraîner le modèle sur un sous-ensemble des variables les plus pertinentes pour faciliter l'intégration de l'API.
-2.  **API de Scoring** : Développer une API (FastAPI) pour l'inférence en quasi temps réel.
+1.  **API de Scoring** : Développer une API (FastAPI) pour l'inférence en quasi temps réel.
 2.  **Conteneurisation** : Créer un Dockerfile pour un déploiement fluide.
 3.  **CI/CD** : Mettre en œuvre un pipeline automatisé (GitHub Actions) incluant tests et build Docker.
 4.  **Monitoring & Data Drift** : Suivre les performances en production (Evidently, Streamlit) et détecter la dérive des données.

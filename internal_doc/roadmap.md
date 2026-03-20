@@ -1,12 +1,5 @@
 # Roadmap du Projet : Scoring de Crédit avec FastAPI, uv et GitHub Actions
 
-## Phase 0 : Création d'un modèle simplifié (Pipeline Préliminaire)
-*Objectif : Réduire le nombre de features du modèle du Projet 6 pour faciliter l'intégration et l'explicabilité de l'API.*
-- [ ] Analyser les notebooks du Projet 6 pour extraire les features les plus importantes (Top Features).
-- [ ] Créer un script d'entraînement simplifié (`scripts/train_optimized.py`) ne gardant que ces features.
-- [ ] Entraîner et évaluer ce modèle "allégé".
-- [ ] Exporter ce nouveau modèle (`model/scoring_model.joblib`) pour la production.
-
 ## Phase 1 : Préparation du dépôt et du modèle
 - [ ] Exporter le modèle final : `CreditScoring_LGBM_SMOTE_Best` depuis MLflow (format joblib ou pickle).
 - [x] Initialiser le dépôt Git : Fait (`git init`, `main`, `develop`, `feature/ci-cd`).
