@@ -11,7 +11,10 @@ from api.schemas import ClientData
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("credit_api")
 
-# Singleton store
+# Pattern Singleton pour les artefacts ML :
+# On utilise un dictionnaire global pour stocker le modèle et ses dépendances (imputeur, features...).
+# Ces éléments sont chargés UNE SEULE FOIS lors du démarrage de l'API (startup) et réutilisés
+# à chaque requête, évitant ainsi des chargements disque/CPU coûteux.
 ml_artifacts = {}
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -19,22 +22,23 @@ MODEL_PATH = os.path.join(BASE_DIR, 'model', 'scoring_model.joblib')
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Démarrage
+    # Démarrage (Startup) - Chargement unique des artefacts en mémoire vive (RAM)
     logger.info("Tentative de chargement du modèle depuis {}".format(MODEL_PATH))
     if not os.path.exists(MODEL_PATH):
         logger.error(f"Fichier modèle introuvable ! L'API démarrera mais les prédictions renverront 503.")
     else:
+        # Singleton : Le joblib.load n'est exécuté qu'ici, au lancement du processus
         artefact = joblib.load(MODEL_PATH)
         ml_artifacts['model'] = artefact['model']
         ml_artifacts['imputer'] = artefact['imputer']
         ml_artifacts['features'] = artefact['features']
         ml_artifacts['threshold'] = artefact['metrics']['best_threshold']
-        logger.info("Modèle et métriques chargés avec succès dans la RAM.")
+        logger.info("Modèle et métriques chargés avec succès dans la RAM (Singleton prêt).")
         
     yield
     
-    # Extinction
-    logger.info("Libération des ressources...")
+    # Extinction (Shutdown)
+    logger.info("Libération de la mémoire vive (RAM)...")
     ml_artifacts.clear()
 
 app = FastAPI(

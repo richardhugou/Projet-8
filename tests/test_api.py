@@ -32,8 +32,13 @@ def test_read_root():
 def test_predict_missing_model_returns_503(hide_model):
     """Teste si l'API renvoie 503 quand le modèle n'est pas chargé."""
     with TestClient(app) as client:
-        # Les données factices (le schéma Pydantic s'occupe des valeurs par défaut à 0.0)
-        payload = {}
+        # Données valides au sens Pydantic mais modèle absent
+        payload = {
+            "AMT_INCOME_TOTAL": 100000,
+            "AMT_CREDIT": 500000,
+            "AMT_ANNUITY": 25000,
+            "DAYS_BIRTH": -15000
+        }
         
         response = client.post("/predict", json=payload)
         assert response.status_code == 503
@@ -45,8 +50,13 @@ def test_predict_withModel_returns_200():
         pytest.skip(f"Modèle non trouvé à {MODEL_PATH}, test ignoré.")
         
     with TestClient(app) as client:
-        # Payload vide (tout à 0) pour tester juste que ça passe l'imputeur et le ML
-        payload = {}
+        # Payload valide
+        payload = {
+            "AMT_INCOME_TOTAL": 100000,
+            "AMT_CREDIT": 500000,
+            "AMT_ANNUITY": 25000,
+            "DAYS_BIRTH": -15000
+        }
         
         response = client.post("/predict", json=payload)
         assert response.status_code == 200
@@ -56,3 +66,41 @@ def test_predict_withModel_returns_200():
         assert "prediction" in json_resp
         assert "status" in json_resp
         assert json_resp["status"] in ["ACCORDÉ", "REFUSÉ"]
+
+def test_predict_missing_mandatory_fields_returns_422():
+    """Vérifie que l'API rejette les requêtes sans les champs obligatoires."""
+    with TestClient(app) as client:
+        # On oublie AMT_INCOME_TOTAL et AMT_CREDIT
+        payload = {"AMT_ANNUITY": 1000, "DAYS_BIRTH": -10000}
+        response = client.post("/predict", json=payload)
+        assert response.status_code == 422
+
+def test_predict_invalid_types_returns_422():
+    """Vérifie que l'API rejette les types de données incorrects."""
+    with TestClient(app) as client:
+        payload = {
+            "AMT_INCOME_TOTAL": "beaucoup d'argent", # String au lieu de float
+            "AMT_CREDIT": 50000,
+            "AMT_ANNUITY": 2000,
+            "DAYS_BIRTH": -15000
+        }
+        response = client.post("/predict", json=payload)
+        assert response.status_code == 422
+
+def test_predict_out_of_range_values_returns_422():
+    """Vérifie que les contraintes métier (ex: ge=0) sont respectées."""
+    with TestClient(app) as client:
+        payload = {
+            "AMT_INCOME_TOTAL": -100, # Négatif interdit
+            "AMT_CREDIT": 50000,
+            "AMT_ANNUITY": 2000,
+            "DAYS_BIRTH": -15000
+        }
+        response = client.post("/predict", json=payload)
+        assert response.status_code == 422
+        
+        # Test DAYS_BIRTH positif (interdit par le schéma le=0)
+        payload["AMT_INCOME_TOTAL"] = 50000
+        payload["DAYS_BIRTH"] = 500 # Positif interdit
+        response = client.post("/predict", json=payload)
+        assert response.status_code == 422
