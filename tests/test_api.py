@@ -1,26 +1,13 @@
 import os
-import shutil
 import pytest
+import json
+from unittest.mock import patch
 from fastapi.testclient import TestClient
 
 from api.main import app, BASE_DIR, MODEL_PATH
 
 # Chemin temporaire pour cacher le modèle lors du test de résilience
 MODEL_HIDDEN_PATH = MODEL_PATH + ".hidden"
-
-@pytest.fixture
-def hide_model():
-    """Déplace temporairement le modèle pour simuler son absence."""
-    was_hidden = False
-    if os.path.exists(MODEL_PATH):
-        shutil.move(MODEL_PATH, MODEL_HIDDEN_PATH)
-        was_hidden = True
-        
-    yield
-    
-    # Rétablir le modèle après le test
-    if was_hidden and os.path.exists(MODEL_HIDDEN_PATH):
-        shutil.move(MODEL_HIDDEN_PATH, MODEL_PATH)
 
 def test_read_root():
     # Avec TestClient, le asyncontextmanager s'exécute, donc l'API démarre.
@@ -29,20 +16,22 @@ def test_read_root():
         assert response.status_code == 200
         assert response.json() == {"status": "ok", "message": "API de Scoring opérationnelle."}
 
-def test_predict_missing_model_returns_503(hide_model):
-    """Teste si l'API renvoie 503 quand le modèle n'est pas chargé."""
-    with TestClient(app) as client:
-        # Données valides au sens Pydantic mais modèle absent
-        payload = {
-            "AMT_INCOME_TOTAL": 100000,
-            "AMT_CREDIT": 500000,
-            "AMT_ANNUITY": 25000,
-            "DAYS_BIRTH": -15000
-        }
-        
-        response = client.post("/predict", json=payload)
-        assert response.status_code == 503
-        assert "Modèle non disponible" in response.json()["detail"]
+def test_predict_missing_model_returns_503():
+    """Teste si l'API renvoie 503 quand le modèle n'est pas trouvé (via Mocking)."""
+    # On patche le chemin du modèle vers un dossier inexistant
+    with patch("api.main.MODEL_PATH", "/tmp/non_existent_folder/missing_model.joblib"):
+        with TestClient(app) as client:
+            # Données valides au sens Pydantic mais modèle absent
+            payload = {
+                "AMT_INCOME_TOTAL": 100000,
+                "AMT_CREDIT": 500000,
+                "AMT_ANNUITY": 25000,
+                "DAYS_BIRTH": -15000
+            }
+            
+            response = client.post("/predict", json=payload)
+            assert response.status_code == 503
+            assert "Modèle non disponible" in response.json()["detail"]
 
 def test_predict_withModel_returns_200():
     """Teste la prédiction normale si le modèle est présent."""
@@ -104,3 +93,31 @@ def test_predict_out_of_range_values_returns_422():
         payload["DAYS_BIRTH"] = 500 # Positif interdit
         response = client.post("/predict", json=payload)
         assert response.status_code == 422
+
+def test_predict_generates_log_file():
+    """Vérifie qu'une ligne de log est bien écrite lors d'une prédiction."""
+    from api.main import LOG_FILE
+    
+    # On s'assure d'un état propre : supprimer le log s'il existe
+    if os.path.exists(LOG_FILE):
+        os.remove(LOG_FILE)
+        
+    with TestClient(app) as client:
+        payload = {
+            "AMT_INCOME_TOTAL": 100000,
+            "AMT_CREDIT": 500000,
+            "AMT_ANNUITY": 25000,
+            "DAYS_BIRTH": -15000
+        }
+        response = client.post("/predict", json=payload)
+        assert response.status_code == 200
+        
+        # Vérifier l'existence et le contenu du fichier
+        assert os.path.exists(LOG_FILE)
+        with open(LOG_FILE, "r") as f:
+            lines = f.readlines()
+            assert len(lines) >= 1
+            last_log = json.loads(lines[-1])
+            assert "timestamp" in last_log
+            assert "latency_ms" in last_log
+            assert last_log["inputs"]["AMT_INCOME_TOTAL"] == 100000
