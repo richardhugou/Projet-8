@@ -5,7 +5,7 @@ import numpy as np
 import joblib
 import lightgbm as lgb
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import roc_auc_score, accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
+from sklearn.metrics import roc_auc_score, precision_score, recall_score, f1_score, confusion_matrix
 from sklearn.impute import SimpleImputer
 from imblearn.over_sampling import SMOTE
 import time
@@ -25,7 +25,7 @@ COST_FN = 10
 COST_FP = 1
 
 def main():
-    print(f"--- Démarrage de la Phase 0 : Entraînement du modèle allégé ---")
+    print("--- Démarrage de la Phase 0 : Entraînement du modèle allégé ---")
     
     # 2. Chargement des données
     if not os.path.exists(DATA_PATH):
@@ -163,7 +163,7 @@ def main():
         # Log du modèle dans MLflow
         mlflow.lightgbm.log_model(final_model, "lightgbm-model")
         
-        print(f"--- RÉSULTATS MLOPS ---")
+        print("--- RÉSULTATS MLOPS ---")
         print(f"Seuil optimal (FN=10, FP=1) : {best_threshold:.3f}")
         print(f"Coût Métier Minimum : {min_cost}")
         print(f"ROC AUC : {auc:.4f}")

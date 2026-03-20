@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import joblib
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException
 from contextlib import asynccontextmanager
 import logging
 import json
@@ -48,7 +48,7 @@ async def lifespan(app: FastAPI):
     os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
     
     if not os.path.exists(MODEL_PATH):
-        logger.error(f"Fichier modèle introuvable ! L'API démarrera mais les prédictions renverront 503.")
+        logger.error("Fichier modèle introuvable ! L'API démarrera mais les prédictions renverront 503.")
     else:
         # Singleton : Le joblib.load n'est exécuté qu'ici, au lancement du processus
         artefact = joblib.load(MODEL_PATH)

@@ -4,7 +4,7 @@ import json
 from unittest.mock import patch
 from fastapi.testclient import TestClient
 
-from api.main import app, BASE_DIR, MODEL_PATH
+from api.main import app, MODEL_PATH
 
 # Chemin temporaire pour cacher le modèle lors du test de résilience
 MODEL_HIDDEN_PATH = MODEL_PATH + ".hidden"
