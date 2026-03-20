@@ -34,3 +34,6 @@ uv.lock
 # OS
 .DS_Store
 Thumbs.db
+
+# Documentation Interne (Untracked)
+internal_doc/
