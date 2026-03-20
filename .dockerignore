@@ -1,0 +1,25 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Projet (Fichiers volumineux ou inutiles en prod)
+data/
+notebooks/
+scripts/
+mlruns/
+tests/
+internal_doc/
+logs/*.jsonl
+
+# Docker
+Dockerfile
+.dockerignore
