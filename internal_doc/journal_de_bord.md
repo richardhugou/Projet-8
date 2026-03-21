@@ -86,10 +86,10 @@ L'application a été containerisée pour garantir la portabilité et la reprodu
 - **Paramétrage** : L'API écoute sur le port `8000` et est accessible via l'hôte `0.0.0.0` à l'intérieur du conteneur.
 
 ### 1. Validation E2E (Smoke Test)
-Un script de test automatisé `scripts/test_docker_smoke.sh` a certifié l'intégralité de la chaîne :
-- **Build** : Réussite de la construction (v4) incluant `libgomp1`.
-- **Runtime** : Démarrage réussi du serveur Uvicorn dans le conteneur.
-- **Inférence métier** : Un appel réel a été passé. Résultat : `{"probability_default": 0.057, "status": "ACCORDÉ"}`. 
+Un script de test automatisé `scripts/test_docker_smoke.sh` a certifié l'intégralité de la chaîne.
+- **Difficulté rencontrée** : L'image `python:3.12-slim` ne contient pas la bibliothèque **OpenMP** par défaut. Comme **LightGBM** (moteur du domaine métier) utilise cette bibliothèque pour paralléliser les calculs, l'API renvoyait une erreur `OSError: libgomp.so.1: cannot open shared object file`.
+- **Résolution** : Installation explicite de `libgomp1` (implémentation GNU d'OpenMP) dans le Dockerfile. Sans cet outil, le moteur de calcul métier ne pourrait pas charger ses bibliothèques C++ natives.
+- **Résultat du test** : Succès total du build (v4) et du démarrage du serveur. Inférence isolée réussie : `{"probability_default": 0.057, "status": "ACCORDÉ"}`.
 - **Verdict** : Le domaine métier est parfaitement préservé dans l'environnement containerisé.
 
 ## Guide de Validation Technique
