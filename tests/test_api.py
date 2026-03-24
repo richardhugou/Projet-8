@@ -26,7 +26,10 @@ def test_predict_missing_model_returns_503():
                 "AMT_INCOME_TOTAL": 100000,
                 "AMT_CREDIT": 500000,
                 "AMT_ANNUITY": 25000,
-                "DAYS_BIRTH": -15000
+                "DAYS_BIRTH": -15000,
+                "EXT_SOURCE_1": 0.5,
+                "EXT_SOURCE_2": 0.5,
+                "EXT_SOURCE_3": 0.5
             }
             
             response = client.post("/predict", json=payload)
@@ -44,7 +47,10 @@ def test_predict_withModel_returns_200():
             "AMT_INCOME_TOTAL": 100000,
             "AMT_CREDIT": 500000,
             "AMT_ANNUITY": 25000,
-            "DAYS_BIRTH": -15000
+            "DAYS_BIRTH": -15000,
+            "EXT_SOURCE_1": 0.5,
+            "EXT_SOURCE_2": 0.5,
+            "EXT_SOURCE_3": 0.5
         }
         
         response = client.post("/predict", json=payload)
@@ -59,7 +65,7 @@ def test_predict_withModel_returns_200():
 def test_predict_missing_mandatory_fields_returns_422():
     """Vérifie que l'API rejette les requêtes sans les champs obligatoires."""
     with TestClient(app) as client:
-        # On oublie AMT_INCOME_TOTAL et AMT_CREDIT
+        # On oublie les champs obligatoires
         payload = {"AMT_ANNUITY": 1000, "DAYS_BIRTH": -10000}
         response = client.post("/predict", json=payload)
         assert response.status_code == 422
@@ -71,7 +77,10 @@ def test_predict_invalid_types_returns_422():
             "AMT_INCOME_TOTAL": "beaucoup d'argent", # String au lieu de float
             "AMT_CREDIT": 50000,
             "AMT_ANNUITY": 2000,
-            "DAYS_BIRTH": -15000
+            "DAYS_BIRTH": -15000,
+            "EXT_SOURCE_1": 0.5,
+            "EXT_SOURCE_2": 0.5,
+            "EXT_SOURCE_3": 0.5
         }
         response = client.post("/predict", json=payload)
         assert response.status_code == 422
@@ -83,7 +92,10 @@ def test_predict_out_of_range_values_returns_422():
             "AMT_INCOME_TOTAL": -100, # Négatif interdit
             "AMT_CREDIT": 50000,
             "AMT_ANNUITY": 2000,
-            "DAYS_BIRTH": -15000
+            "DAYS_BIRTH": -15000,
+            "EXT_SOURCE_1": 0.5,
+            "EXT_SOURCE_2": 0.5,
+            "EXT_SOURCE_3": 0.5
         }
         response = client.post("/predict", json=payload)
         assert response.status_code == 422
@@ -107,7 +119,10 @@ def test_predict_generates_log_file():
             "AMT_INCOME_TOTAL": 100000,
             "AMT_CREDIT": 500000,
             "AMT_ANNUITY": 25000,
-            "DAYS_BIRTH": -15000
+            "DAYS_BIRTH": -15000,
+            "EXT_SOURCE_1": 0.5,
+            "EXT_SOURCE_2": 0.5,
+            "EXT_SOURCE_3": 0.5
         }
         response = client.post("/predict", json=payload)
         assert response.status_code == 200

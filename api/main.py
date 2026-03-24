@@ -37,7 +37,8 @@ def log_prediction(inputs: dict, outputs: dict, latency: float, status_code: int
 # à chaque requête, évitant ainsi des chargements disque/CPU coûteux.
 ml_artifacts = {}
 
-MODEL_PATH = os.path.join(BASE_DIR, 'model', 'scoring_model.joblib')
+MODEL_FILENAME = os.getenv('SCORING_MODEL_FILENAME', 'scoring_model.joblib')
+MODEL_PATH = os.path.join(BASE_DIR, 'model', MODEL_FILENAME)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -56,7 +57,7 @@ async def lifespan(app: FastAPI):
         ml_artifacts['imputer'] = artefact['imputer']
         ml_artifacts['features'] = artefact['features']
         ml_artifacts['threshold'] = artefact['metrics']['best_threshold']
-        logger.info("Modèle et métriques chargés avec succès dans la RAM (Singleton prêt).")
+        logger.info(f"Modèle '{MODEL_FILENAME}' chargé avec {len(ml_artifacts['features'])} features (Top {len(ml_artifacts['features'])}). Seuil: {ml_artifacts['threshold']:.3f}.")
         
     yield
     

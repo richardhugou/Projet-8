@@ -1,60 +1,61 @@
 from pydantic import BaseModel, ConfigDict, Field
 
-class ClientData(BaseModel):
-    # Champs critiques (Obligatoires sans valeur par défaut)
-    AMT_INCOME_TOTAL: float = Field(..., ge=0, description="Revenu total annuel du client")
-    AMT_CREDIT: float = Field(..., ge=0, description="Montant du crédit demandé")
-    AMT_ANNUITY: float = Field(..., ge=0, description="Montant de l'annuité de remboursement")
-    DAYS_BIRTH: float = Field(..., le=0, description="Âge en jours (doit être négatif)")
-    
-    # Sources externes (cruciales pour le score, souvent entre 0 et 1)
-    EXT_SOURCE_1: float = Field(0.5, ge=0, le=1)
-    EXT_SOURCE_2: float = Field(0.5, ge=0, le=1)
-    EXT_SOURCE_3: float = Field(0.5, ge=0, le=1)
+# Schéma des données client avec statistiques issues de l'entraînement
+# Les descriptions incluent la moyenne (avg) et l'écart-type (std) pour référence (outliers/drift).
 
-    # Autres variables (avec valeurs par défaut si non fournies)
-    CREDIT_TERM: float = Field(0.0, ge=0)
-    AMT_GOODS_PRICE: float = Field(0.0, ge=0)
-    DAYS_EMPLOYED_PERCENT: float = 0.0
-    DAYS_LAST_PHONE_CHANGE: float = 0.0
-    DAYS_REGISTRATION: float = 0.0
-    ANNUITY_INCOME_PERCENT: float = 0.0
-    CREDIT_INCOME_PERCENT: float = 0.0
-    YEARS_BIRTH: float = Field(0.0, ge=0)
-    REGION_POPULATION_RELATIVE: float = 0.0
-    CODE_GENDER_M: float = 0.0
-    DAYS_EMPLOYED: float = 0.0
-    YEARS_EMPLOYED: float = 0.0
-    OWN_CAR_AGE: float = 0.0
-    NAME_CONTRACT_TYPE_Revolvingloans: float = 0.0
-    NAME_EDUCATION_TYPE_Highereducation: float = 0.0
-    AMT_REQ_CREDIT_BUREAU_YEAR: float = 0.0
-    FLAG_OWN_CAR_Y: float = 0.0
-    NAME_FAMILY_STATUS_Married: float = 0.0
-    FLAG_DOCUMENT_3: float = 0.0
-    REGION_RATING_CLIENT_W_CITY: float = 0.0
-    DAYS_ID_PUBLISH: float = 0.0
-    LANDAREA_AVG: float = 0.0
-    HOUR_APPR_PROCESS_START: float = 0.0
-    APARTMENTS_MODE: float = 0.0
-    AMT_REQ_CREDIT_BUREAU_QRT: float = 0.0
-    YEARS_BEGINEXPLUATATION_MODE: float = 0.0
-    DEF_60_CNT_SOCIAL_CIRCLE: float = 0.0
-    OBS_60_CNT_SOCIAL_CIRCLE: float = 0.0
-    LIVINGAPARTMENTS_AVG: float = 0.0
-    DEF_30_CNT_SOCIAL_CIRCLE: float = 0.0
-    FLAG_WORK_PHONE: float = 0.0
-    ENTRANCES_AVG: float = 0.0
-    TOTALAREA_MODE: float = 0.0
-    NAME_EDUCATION_TYPE_Secondarysecondaryspecial: float = 0.0
-    COMMONAREA_MODE: float = 0.0
-    LANDAREA_MODE: float = 0.0
-    NONLIVINGAREA_MODE: float = 0.0
-    YEARS_BEGINEXPLUATATION_MEDI: float = 0.0
-    NONLIVINGAREA_AVG: float = 0.0
-    YEARS_BUILD_MODE: float = 0.0
-    OCCUPATION_TYPE_Corestaff: float = 0.0
-    REG_CITY_NOT_LIVE_CITY: float = 0.0
-    APARTMENTS_AVG: float = 0.0
+class ClientData(BaseModel):
+    # Variables les plus critiques (Top 15)
+    CREDIT_TERM: float = Field(0.054, ge=0, description="Ratio Annuité / Crédit. (avg: 0.054, std: 0.022)")
+    EXT_SOURCE_1: float = Field(..., ge=0, le=1, description="Score source externe 1. (avg: 0.504, std: 0.140)")
+    EXT_SOURCE_2: float = Field(..., ge=0, le=1, description="Score source externe 2. (avg: 0.514, std: 0.191)")
+    EXT_SOURCE_3: float = Field(..., ge=0, le=1, description="Score source externe 3. (avg: 0.516, std: 0.175)")
+    DAYS_BIRTH: float = Field(..., le=0, description="Âge en jours. (avg: -16030, std: 4363)")
+    DAYS_ID_PUBLISH: float = Field(-3000, le=0, description="Jours depuis dernier ID. (avg: -2994, std: 1508)")
+    AMT_GOODS_PRICE: float = Field(538000, ge=0, description="Prix des biens. (avg: 538573, std: 369439)")
+    AMT_ANNUITY: float = Field(..., ge=0, description="Montant annuité. (avg: 26931, std: 13678)")
+    AMT_CREDIT: float = Field(..., ge=0, description="Montant du crédit. (avg: 596473, std: 391768)")
+    DAYS_LAST_PHONE_CHANGE: float = Field(-962, le=0, description="Jours depuis changement tel. (avg: -963, std: 827)")
+    DAYS_EMPLOYED_PERCENT: float = Field(0.15, description="Ratio jours travaillés / âge. (avg: 0.150, std: 0.122)")
+    DAYS_REGISTRATION: float = Field(-4990, le=0, description="Jours depuis enregistrement. (avg: -4990, std: 3525)")
+    YEARS_BIRTH: float = Field(43.9, ge=0, description="Âge en années. (avg: 43.9, std: 12.0)")
+    ANNUITY_INCOME_PERCENT: float = Field(0.18, description="Ratio annuité / revenu. (avg: 0.181, std: 0.094)")
+    DAYS_EMPLOYED: float = Field(-2253, le=0, description="Jours travaillés. (avg: -2253, std: 2138)")
+
+    # Variables additionnelles (présentes dans le Top 50)
+    AMT_INCOME_TOTAL: float = Field(..., ge=0, description="Revenu total annuel. (avg: 166004, std: 83075)")
+    CREDIT_INCOME_PERCENT: float = Field(3.96, description="Ratio crédit / revenu. (avg: 3.96, std: 2.67)")
+    OWN_CAR_AGE: float = Field(10.0, ge=0)
+    REGION_POPULATION_RELATIVE: float = Field(0.02, ge=0)
+    YEARS_EMPLOYED: float = Field(6.2, ge=0)
+    CODE_GENDER_M: float = Field(0.0)
+    NAME_CONTRACT_TYPE_Revolvingloans: float = Field(0.0)
+    NAME_EDUCATION_TYPE_Highereducation: float = Field(0.0)
+    AMT_REQ_CREDIT_BUREAU_YEAR: float = Field(0.0)
+    FLAG_OWN_CAR_Y: float = Field(0.0)
+    REGION_RATING_CLIENT_W_CITY: float = Field(2.0)
+    AMT_REQ_CREDIT_BUREAU_QRT: float = Field(0.0)
+    NAME_FAMILY_STATUS_Married: float = Field(1.0)
+    HOUR_APPR_PROCESS_START: float = Field(12.0)
+    YEARS_BEGINEXPLUATATION_MODE: float = Field(0.98)
+    TOTALAREA_MODE: float = Field(0.08)
+    DEF_60_CNT_SOCIAL_CIRCLE: float = Field(0.0)
+    FLAG_DOCUMENT_3: float = Field(1.0)
+    NAME_EDUCATION_TYPE_Secondarysecondaryspecial: float = Field(1.0)
+    APARTMENTS_AVG: float = Field(0.1)
+    COMMONAREA_AVG: float = Field(0.02)
+    APARTMENTS_MODE: float = Field(0.1)
+    BASEMENTAREA_MODE: float = Field(0.08)
+    FLOORSMAX_AVG: float = Field(0.2)
+    OBS_60_CNT_SOCIAL_CIRCLE: float = Field(0.0)
+    REG_CITY_NOT_LIVE_CITY: float = Field(0.0)
+    BASEMENTAREA_AVG: float = Field(0.08)
+    OBS_30_CNT_SOCIAL_CIRCLE: float = Field(0.0)
+    FLAG_WORK_PHONE: float = Field(0.0)
+    LIVINGAREA_AVG: float = Field(0.1)
+    NONLIVINGAREA_AVG: float = Field(0.01)
+    YEARS_BUILD_MODE: float = Field(0.76)
+    COMMONAREA_MODE: float = Field(0.02)
+    NONLIVINGAREA_MODE: float = Field(0.01)
+    DEF_30_CNT_SOCIAL_CIRCLE: float = Field(0.0)
 
     model_config = ConfigDict(extra='ignore')
