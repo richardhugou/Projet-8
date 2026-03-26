@@ -79,7 +79,7 @@ else:
         avg_lat = round(df['latency'].mean(), 2)
         st.metric("Latence Moyenne", f"{avg_lat}ms", delta=f"{round(avg_lat-20, 1)}ms vs target", delta_color="inverse")
     with col3:
-        # Calcul robuste : filtrage + ùcomptage des lignes
+        # Calcul robuste : filtrage + comptage des lignes
         count_acc = df[df['status'] == 'ACCORDÉ'].shape[0]
         acc_rate = round((count_acc / len(df)) * 100, 1)
         st.metric("Taux d'Accord", f"{acc_rate}%")
