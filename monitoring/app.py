@@ -79,13 +79,13 @@ else:
         avg_lat = round(df['latency'].mean(), 2)
         st.metric("Latence Moyenne", f"{avg_lat}ms", delta=f"{round(avg_lat-20, 1)}ms vs target", delta_color="inverse")
     with col3:
-        # Calcul robuste du taux d'accord (évite l'erreur sur les objets bool)
-        count_acc = (df['status'] == 'ACCORDÉ').sum()
+        # Calcul robuste : filtrage + ùcomptage des lignes
+        count_acc = df[df['status'] == 'ACCORDÉ'].shape[0]
         acc_rate = round((count_acc / len(df)) * 100, 1)
         st.metric("Taux d'Accord", f"{acc_rate}%")
     with col4:
-        # Calcul robuste du taux de refus
-        count_ref = (df['status'] == 'REFUSÉ').sum()
+        # Calcul robuste
+        count_ref = df[df['status'] == 'REFUSÉ'].shape[0]
         ref_rate = round((count_ref / len(df)) * 100, 1)
         st.metric("Taux de Refus", f"{ref_rate}%")
 
