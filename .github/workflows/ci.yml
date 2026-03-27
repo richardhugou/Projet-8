@@ -1,4 +1,4 @@
-name: CI/CD Placeholder
+name: CI/CD Pipeline
 
 on:
   push:
@@ -7,7 +7,8 @@ on:
     branches: [ "main", "develop" ]
 
 jobs:
-  build:
+  test:
+    name: Run Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -18,16 +19,20 @@ jobs:
           version: "latest"
 
       - name: Installer les dépendances
-        run: |
-          # Utilisation de uv pour synchroniser l'environnement
-          uv sync --all-extras --dev
+        run: uv sync --all-extras --dev
+      - name : Linter
+        run : uvx run ruff check
+      - name : Formatter
+        run : uvx run ruff format --check
+      - name: Exécution des tests (Pytest)
+        run: uv run python3 -m pytest
 
-      - name: Vérification du code (Linting)
-        run: |
-          # Exemple de vérification : on peut ajouter ruff plus tard
-          echo "Placeholder pour le linting"
+  build:
+    name: Verify Docker Build
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-      - name: Exécution des tests
-        run: |
-          # Exemple d'exécution de tests via uv script
-          uv run main.py
+      - name: Build Docker image
+        run: docker build -t credit-scoring-api .
