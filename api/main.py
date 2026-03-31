@@ -21,7 +21,7 @@ LOG_FILE = os.path.join(BASE_DIR, "logs", "production_inference.jsonl")
 
 
 def log_prediction(inputs: dict, outputs: dict, latency: float, status_code: int = 200):
-    """Enregistre une ligne de log structurée en JSON."""
+    """Enregistre une ligne de log structurée en JSON (Fichier + Console)."""
     log_entry = {
         "timestamp": datetime.now().isoformat(),
         "inputs": inputs,
@@ -29,8 +29,13 @@ def log_prediction(inputs: dict, outputs: dict, latency: float, status_code: int
         "latency_ms": round(latency * 1000, 2),
         "status_code": status_code,
     }
+    
+    # 1. Stockage physique (Exigence Projet 8 - Screenshots)
     with open(LOG_FILE, "a") as f:
         f.write(json.dumps(log_entry) + "\n")
+    
+    # 2. Sortie Standard (Best Practice Docker / Observabilité) Cette brique permet dans le cadre d'un déploiement de voir les logs dans le terminal ou Docker Logs
+    logger.info(f"PRODUCTION_LOG: {json.dumps(log_entry)}")
 
 
 # Pattern Singleton pour les artefacts ML :
