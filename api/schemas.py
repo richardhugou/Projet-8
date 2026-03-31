@@ -1,5 +1,5 @@
 from typing import Optional
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 # Schéma des données client avec statistiques issues de l'entraînement
 # Les descriptions incluent la moyenne (avg) et l'écart-type (std) pour référence (outliers/drift).
@@ -95,5 +95,22 @@ class ClientData(BaseModel):
     COMMONAREA_MODE: Optional[float] = Field(0.02)
     NONLIVINGAREA_MODE: Optional[float] = Field(0.01)
     DEF_30_CNT_SOCIAL_CIRCLE: Optional[float] = Field(0.0)
+
+    @model_validator(mode="before")
+    @classmethod
+    def check_completeness(cls, data: dict):
+        """
+        Garantit que le dossier n'est pas vide. 
+        On exige au moins 5 variables (10% du Top 50) pour autoriser le scoring.
+        """
+        # On compte les clés qui ne sont pas nulles dans le dictionnaire brut
+        provided_fields = [k for k, v in data.items() if v is not None]
+        
+        if len(provided_fields) < 5:
+            raise ValueError(
+                f"Dossier trop incomplet ({len(provided_fields)}/5 variables min). "
+                "Veuillez fournir au moins 5 informations sur le client pour un scoring fiable."
+            )
+        return data
 
     model_config = ConfigDict(extra="ignore")

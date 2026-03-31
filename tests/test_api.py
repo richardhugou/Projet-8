@@ -70,13 +70,34 @@ def test_predict_withModel_returns_200():
 
 
 def test_predict_missing_fields_are_imputed_returns_200():
-    """Vérifie que l'API accepte les requêtes avec des champs manquants et les impute (Résilience)."""
+    """Vérifie que l'API accepte les requêtes avec des champs manquants (partiel) et les impute."""
     with TestClient(app) as client:
-        # On oublie certains champs. L'imputeur doit prendre le relais.
-        payload = {"AMT_ANNUITY": 1000, "DAYS_BIRTH": -10000}
+        # On envoie le strict minimum (5 variables) pour tester l'imputation des 45 autres.
+        payload = {
+            "AMT_ANNUITY": 1000,
+            "DAYS_BIRTH": -10000,
+            "EXT_SOURCE_1": 0.5,
+            "EXT_SOURCE_2": 0.5,
+            "EXT_SOURCE_3": 0.5,
+        }
         response = client.post("/predict", json=payload)
         assert response.status_code == 200
         assert "probability_default" in response.json()
+
+
+def test_predict_completeness_rejection_returns_422():
+    """Vérifie que l'API rejette les dossiers trop incomplets (moins de 5 variables)."""
+    with TestClient(app) as client:
+        # Cas 1 : Dossier vide
+        response = client.post("/predict", json={})
+        assert response.status_code == 422
+        assert "Dossier trop incomplet" in response.text
+
+        # Cas 2 : Dossier avec seulement 3 variables (insuffisant)
+        payload = {"AMT_ANNUITY": 5000, "DAYS_BIRTH": -20000, "EXT_SOURCE_1": 0.1}
+        response = client.post("/predict", json=payload)
+        assert response.status_code == 422
+        assert "3/5 variables min" in response.text
 
 
 def test_predict_invalid_types_returns_422():
