@@ -1,0 +1,8 @@
+.DS_Store
+.venv/
+__pycache__/
+*.pyc
+mlruns/
+logs/
+internal_doc/
+data/
