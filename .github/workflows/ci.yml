@@ -27,11 +27,11 @@ jobs:
       - name: Formatter (Ruff)
         run: uvx run ruff format --check
         
-      - name: Exécution des tests (Pytest)
-        run: uv run python3 -m pytest
+      - name: Exécution des tests avec couverture (Pytest-cov)
+        run: uv run python3 -m pytest --cov=api tests/
 
   build-and-push:
-    name: Build and Push Docker Image
+    name: Build and Push Docker Hub
     needs: test
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
     runs-on: ubuntu-latest
@@ -57,4 +57,20 @@ jobs:
           context: .
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/credit-scoring-api:latest
-          # Injection des secrets github pour faciliter le déploiement sur serveur
+
+  deploy-huggingface:
+    name: Sync to Hugging Face Spaces
+    needs: test
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          lfs: true
+      
+      - name: Push to Hub
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          git push --force https://richardhugou:$HF_TOKEN@huggingface.co/spaces/richardhugou/credit-scoring-api main

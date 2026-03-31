@@ -1,3 +1,13 @@
+---
+title: Credit Scoring API (Projet 8)
+emoji: 💳
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 8000
+pinned: false
+---
+
 # Prêt à Dépenser - Scoring de Crédit MLOps
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
