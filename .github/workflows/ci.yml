@@ -30,33 +30,7 @@ jobs:
       - name: Exécution des tests avec couverture (Pytest-cov)
         run: uv run python3 -m pytest --cov=api tests/
 
-  build-and-push:
-    name: Build and Push Docker Hub
-    needs: test
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
 
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
-
-      - name: Build and push
-        uses: docker/build-push-action@v5
-        with:
-          context: .
-          push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/credit-scoring-api:latest
 
   deploy-huggingface:
     name: Sync to Hugging Face Spaces
@@ -71,6 +45,27 @@ jobs:
       
       - name: Push to Hub
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+            HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git push --force https://trikwi:$HF_TOKEN@huggingface.co/spaces/trikwi/ScoringP8 main
+            # 1. On supprime l'historique Git (qui contient des csv >10MB sans LFS natif)
+            rm -rf .git
+            git config --global user.email "actions@github.com"
+            git config --global user.name "GitHub Actions"
+            
+            # 2. On recrée un dépôt tout neuf juste pour Hugging Face
+            git init
+            git checkout -b main
+            
+            # 3. On force Git LFS sur les gros fichiers potentiels avant l'ajout
+            git lfs install
+            git lfs track "*.csv"
+            git lfs track "*.joblib"
+            git add .gitattributes
+            
+            # 4. On nettoie tout ce qui n'a rien a faire en PRODUCTION
+            rm -rf data/ tests/ notebooks/ .pytest_cache/ mlruns/ docs/ internal_doc/ || true
+            
+            # 5. On commit la photo finale et on propulse
+            git add .
+            git commit -m "🚀 Déploiement CI/CD"
+            git push --force https://trikwi:$HF_TOKEN@huggingface.co/spaces/trikwi/ScoringP8 main
