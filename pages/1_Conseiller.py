@@ -68,7 +68,7 @@ def display_client_fiche(response_json):
     with col_shap:
         st.subheader("Interprétabilité de l'IA (Top 3 Facteurs)")
         top_features = response_json.get("top_features_impact", [])
-        
+
         # Dictionnaire de traduction (Technique -> Métier)
         TRADUCTIONS = {
             "EXT_SOURCE_1": "Score Externe 1",
@@ -81,30 +81,37 @@ def display_client_fiche(response_json):
             "DAYS_EMPLOYED": "Ancienneté Emploi",
             "CODE_GENDER": "Genre",
             "NAME_EDUCATION_TYPE": "Niveau d'Éducation",
-            "NAME_FAMILY_STATUS": "Statut Familial"
+            "NAME_FAMILY_STATUS": "Statut Familial",
         }
-        
+
         if top_features:
             # Transformation automatique en bar chart pour les non-Data Scientists
             df_shap = pd.DataFrame(top_features)
-            
+
             # Application de la traduction
-            df_shap['Nom Critique'] = df_shap['feature'].apply(lambda x: TRADUCTIONS.get(x, x.replace("_", " ").title()))
-            
-            # Label métier : Positif (SHAP > 0) veut dire que ça augmente le risque de défaut !
-            df_shap['Impact'] = df_shap['shap_value'].apply(lambda x: 'Augmente le Risque' if x > 0 else 'Baisse le Risque')
-            
-            fig_shap = px.bar(
-                df_shap, 
-                x="shap_value", 
-                y="Nom Critique", 
-                orientation='h',
-                color="Impact",
-                color_discrete_map={'Augmente le Risque': '#ff6666', 'Baisse le Risque': '#2bc990'},
+            df_shap["Nom Critique"] = df_shap["feature"].apply(
+                lambda x: TRADUCTIONS.get(x, x.replace("_", " ").title())
             )
-            
+
+            # Label métier : Positif (SHAP > 0) veut dire que ça augmente le risque de défaut !
+            df_shap["Impact"] = df_shap["shap_value"].apply(
+                lambda x: "Augmente le Risque" if x > 0 else "Baisse le Risque"
+            )
+
+            fig_shap = px.bar(
+                df_shap,
+                x="shap_value",
+                y="Nom Critique",
+                orientation="h",
+                color="Impact",
+                color_discrete_map={
+                    "Augmente le Risque": "#ff6666",
+                    "Baisse le Risque": "#2bc990",
+                },
+            )
+
             # Design : On inverse Y pour mettre la plus forte influence tout en haut
-            fig_shap.update_layout(yaxis={'categoryorder':'total ascending'})
+            fig_shap.update_layout(yaxis={"categoryorder": "total ascending"})
             st.plotly_chart(fig_shap, use_container_width=True)
 
             st.info(
@@ -131,25 +138,35 @@ if mode == "Saisie Manuelle Simplifiée":
     with st.form("manual_form"):
         col_m1, col_m2 = st.columns(2)
         with col_m1:
-            amt_annuity = st.number_input("Montant de l'Annuité demandée ($)", value=25000, step=1000)
-            age_annees = st.slider("Âge du Client (en années)", min_value=18, max_value=90, value=40)
-            ext_source_1 = st.slider("Score Crédit Externe 1", min_value=0.0, max_value=1.0, value=0.5)
+            amt_annuity = st.number_input(
+                "Montant de l'Annuité demandée ($)", value=25000, step=1000
+            )
+            age_annees = st.slider(
+                "Âge du Client (en années)", min_value=18, max_value=90, value=40
+            )
+            ext_source_1 = st.slider(
+                "Score Crédit Externe 1", min_value=0.0, max_value=1.0, value=0.5
+            )
         with col_m2:
-            ext_source_2 = st.slider("Score Crédit Externe 2", min_value=0.0, max_value=1.0, value=0.5)
-            ext_source_3 = st.slider("Score Crédit Externe 3", min_value=0.0, max_value=1.0, value=0.5)
-            
+            ext_source_2 = st.slider(
+                "Score Crédit Externe 2", min_value=0.0, max_value=1.0, value=0.5
+            )
+            ext_source_3 = st.slider(
+                "Score Crédit Externe 3", min_value=0.0, max_value=1.0, value=0.5
+            )
+
         submit = st.form_submit_button("Lancer l'Analyse Risque", type="primary")
-        
+
         if submit:
             # Conversion métier transparente pour l'API (Années -> Jours négatifs)
             days_birth_converted = int(-age_annees * 365.25)
-            
+
             payload = {
                 "AMT_ANNUITY": amt_annuity,
                 "DAYS_BIRTH": days_birth_converted,
                 "EXT_SOURCE_1": ext_source_1,
                 "EXT_SOURCE_2": ext_source_2,
-                "EXT_SOURCE_3": ext_source_3
+                "EXT_SOURCE_3": ext_source_3,
             }
             with st.spinner("Vérification en cours par l'IA..."):
                 try:
