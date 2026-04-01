@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import joblib
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, File, UploadFile
 from contextlib import asynccontextmanager
 import logging
 import json
@@ -42,6 +42,7 @@ def log_prediction(inputs: dict, outputs: dict, latency: float, status_code: int
         "outputs": outputs,
         "latency_ms": round(latency * 1000, 2),
         "status_code": status_code,
+        "model_version": ml_artifacts.get("version", "unknown_version"),
     }
     
     # 1. Stockage physique (Exigence Projet 8 - Screenshots)
@@ -96,8 +97,10 @@ async def lifespan(app: FastAPI):
         ml_artifacts["imputer"] = artefact["imputer"]
         ml_artifacts["features"] = artefact["features"]
         ml_artifacts["threshold"] = artefact["metrics"]["best_threshold"]
+        ml_artifacts["version"] = datetime.now().isoformat()
+        
         logger.info(
-            f"Modèle '{MODEL_FILENAME}' chargé avec {len(ml_artifacts['features'])} features (Top {len(ml_artifacts['features'])}). Seuil: {ml_artifacts['threshold']:.3f}."
+            f"Modèle '{MODEL_FILENAME}' chargé avec {len(ml_artifacts['features'])} features (Top {len(ml_artifacts['features'])}). Seuil: {ml_artifacts['threshold']:.3f}. Version: {ml_artifacts['version']}"
         )
 
     yield
@@ -117,7 +120,55 @@ app = FastAPI(
 
 @app.get("/")
 def read_root():
-    return {"status": "ok", "message": "API de Scoring opérationnelle."}
+    return {
+        "status": "ok", 
+        "message": "API de Scoring opérationnelle.", 
+        "model_version": ml_artifacts.get("version", "non chargé")
+    }
+    
+@app.post("/admin/update_model")
+async def update_model(file: UploadFile = File(...)):
+    """Route Admin pour mettre à jour le modèle à chaud (Hot-Swap) avec Zéro Downtime."""
+    if not file.filename.endswith('.joblib'):
+        raise HTTPException(status_code=400, detail="Le fichier doit être au format .joblib")
+    
+    # 1. Sauvegarde physique (écrase l'ancien modèle)
+    try:
+        content = await file.read()
+        with open(MODEL_PATH, "wb") as f:
+            f.write(content)
+        logger.info(f"HOT-SWAP STEP 1 : Fichier {file.filename} sauvegardé sur {MODEL_PATH}")
+    except Exception as e:
+        logger.error(f"Erreur d'écriture du modèle : {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erreur I/O: {str(e)}")
+        
+    # 2. Re-chargement à chaud (Hot-Swap) dans la RAM
+    try:
+        nouveau_artefact = joblib.load(MODEL_PATH)
+        
+        # Vérification basique d'intégrité
+        if "model" not in nouveau_artefact or "features" not in nouveau_artefact:
+            raise ValueError("L'artefact ne contient pas les clés requises du Projet 8.")
+            
+        # Remplacement atomique dans le dictionnaire Singleton
+        ml_artifacts["model"] = nouveau_artefact["model"]
+        ml_artifacts["imputer"] = nouveau_artefact["imputer"]
+        ml_artifacts["features"] = nouveau_artefact["features"]
+        ml_artifacts["threshold"] = nouveau_artefact["metrics"]["best_threshold"]
+        ml_artifacts["version"] = datetime.now().isoformat()
+        
+        logger.warning(f"⭐⭐ HOT-SWAP RÉUSSI ⭐⭐ Nouvelle version activée : {ml_artifacts['version']}")
+        return {
+            "status": "success", 
+            "message": "Bascule à chaud réussie.", 
+            "version": ml_artifacts["version"],
+            "n_features": len(ml_artifacts["features"])
+        }
+        
+    except Exception as e:
+        logger.error(f"HOT-SWAP ÉCHEC : {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Le modèle est corrompu ou illisible : {str(e)}")
+
 
 
 @app.post("/predict")
