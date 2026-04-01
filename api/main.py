@@ -6,6 +6,7 @@ from contextlib import asynccontextmanager
 import logging
 import json
 import time
+import shutil
 from datetime import datetime
 
 from api.schemas import ClientData
@@ -17,7 +18,20 @@ logger = logging.getLogger("credit_api")
 # Configuration du logging PRODUCTION (JSON Lines pour Monitoring)
 # Ce fichier contiendra l'historique complet pour l'analyse de Data Drift
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LOG_FILE = os.path.join(BASE_DIR, "logs", "production_inference.jsonl")
+
+# Stratégie de Persistance Cloud (Hugging Face Storage Bucket)
+CLOUD_STORAGE_DIR = "/data"
+IS_CLOUD = os.path.exists(CLOUD_STORAGE_DIR)
+
+if IS_CLOUD:
+    logger.info("Dossier persistant Cloud détecté (/data). Activation du mode Production.")
+    LOG_DIR = os.path.join(CLOUD_STORAGE_DIR, "logs")
+else:
+    logger.info("Utilisation des répertoires de développement locaux.")
+    LOG_DIR = os.path.join(BASE_DIR, "logs")
+
+os.makedirs(LOG_DIR, exist_ok=True)
+LOG_FILE = os.path.join(LOG_DIR, "production_inference.jsonl")
 
 
 def log_prediction(inputs: dict, outputs: dict, latency: float, status_code: int = 200):
@@ -45,7 +59,14 @@ def log_prediction(inputs: dict, outputs: dict, latency: float, status_code: int
 ml_artifacts = {}
 
 MODEL_FILENAME = os.getenv("SCORING_MODEL_FILENAME", "scoring_model.joblib")
-MODEL_PATH = os.path.join(BASE_DIR, "model", MODEL_FILENAME)
+
+if IS_CLOUD:
+    MODEL_DIR = os.path.join(CLOUD_STORAGE_DIR, "model")
+else:
+    MODEL_DIR = os.path.join(BASE_DIR, "model")
+
+os.makedirs(MODEL_DIR, exist_ok=True)
+MODEL_PATH = os.path.join(MODEL_DIR, MODEL_FILENAME)
 
 
 @asynccontextmanager
@@ -54,7 +75,15 @@ async def lifespan(app: FastAPI):
     logger.info("Tentative de chargement du modèle depuis {}".format(MODEL_PATH))
 
     # S'assurer que le dossier logs existe
-    os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+    os.makedirs(LOG_DIR, exist_ok=True)
+
+    # Amorçage (Seeding) du Bucket Persistant (Cloud)
+    # Si on est sur Hugging Face et que le bucket est vide, on y copie le modèle initial fournit par Github
+    if IS_CLOUD and not os.path.exists(MODEL_PATH):
+        original_model_path = os.path.join(BASE_DIR, "model", MODEL_FILENAME)
+        if os.path.exists(original_model_path):
+            logger.info(f"Amorçage du Storage Bucket : Copie du modèle initial vers {MODEL_PATH}")
+            shutil.copy2(original_model_path, MODEL_PATH)
 
     if not os.path.exists(MODEL_PATH):
         logger.error(
