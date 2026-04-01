@@ -148,17 +148,17 @@ st.write(
 if os.path.exists(REPORT_JSON):
     with open(REPORT_JSON, "r") as f:
         drift_data = json.load(f)
-        
+
     metrics = drift_data.get("metrics", [])
-    
+
     # Extraction globale
     drifted_cols = 0
     total_cols = 0
     drift_share = 0.0
-    
+
     # Extraction détaillée par variable
     drift_details = []
-    
+
     for m in metrics:
         if m.get("metric_name", "").startswith("DriftedColumnsCount"):
             val = m.get("value", {})
@@ -168,33 +168,42 @@ if os.path.exists(REPORT_JSON):
             col_name = m.get("config", {}).get("column", "Unknown")
             p_val = m.get("value")
             threshold = m.get("config", {}).get("threshold", 0.05)
-            
+
             total_cols += 1
             if isinstance(p_val, float):
                 is_drifted = p_val < threshold
                 if is_drifted:
-                    drift_details.append({
-                        "Variable Impactée": col_name,
-                        "Risque de Dérive (p-value)": f"{p_val:.5f}",
-                        "Statut": "🚨 DÉRIVE DÉTECTÉE"
-                    })
-    
+                    drift_details.append(
+                        {
+                            "Variable Impactée": col_name,
+                            "Risque de Dérive (p-value)": f"{p_val:.5f}",
+                            "Statut": "🚨 DÉRIVE DÉTECTÉE",
+                        }
+                    )
+
     # Affichage des KPIs Natifs
     col_kpi1, col_kpi2, col_kpi3 = st.columns(3)
     with col_kpi1:
         st.metric("Variables Surveillées", total_cols)
     with col_kpi2:
-        st.metric("Variables en Dérive", drifted_cols, f"+{drifted_cols} erreurs", delta_color="inverse")
+        st.metric(
+            "Variables en Dérive",
+            drifted_cols,
+            f"+{drifted_cols} erreurs",
+            delta_color="inverse",
+        )
     with col_kpi3:
         st.metric("Taux global de dérive", f"{drift_share * 100:.1f}%")
 
     if drift_details:
-        st.warning(f"Attention, {drifted_cols} variables commencent à avoir un profil statistique différent de l'entraînement.")
+        st.warning(
+            f"Attention, {drifted_cols} variables commencent à avoir un profil statistique différent de l'entraînement."
+        )
         df_drift = pd.DataFrame(drift_details)
         st.dataframe(df_drift, use_container_width=True, hide_index=True)
     else:
         st.success("Toutes les variables sont stables. Aucun Drift majeur détecté.")
-        
+
     # Bouton de secours pour lire le rapport natif dans le navigateur sans iframe
     st.write("")
     if os.path.exists(REPORT_HTML):
@@ -204,7 +213,7 @@ if os.path.exists(REPORT_JSON):
             label="Télécharger le graphique Evidently (Version HTML détaillée complète)",
             data=html_data,
             file_name="drift_report.html",
-            mime="text/html"
+            mime="text/html",
         )
 else:
     st.warning(
