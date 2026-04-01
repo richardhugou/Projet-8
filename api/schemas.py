@@ -100,12 +100,12 @@ class ClientData(BaseModel):
     @classmethod
     def check_completeness(cls, data: dict):
         """
-        Garantit que le dossier n'est pas vide. 
+        Garantit que le dossier n'est pas vide.
         On exige au moins 5 variables (10% du Top 50) pour autoriser le scoring.
         """
         # On compte les clés qui ne sont pas nulles dans le dictionnaire brut
         provided_fields = [k for k, v in data.items() if v is not None]
-        
+
         if len(provided_fields) < 5:
             raise ValueError(
                 f"Dossier trop incomplet ({len(provided_fields)}/5 variables min). "

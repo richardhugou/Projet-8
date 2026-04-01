@@ -1,6 +1,8 @@
 import os
 import pandas as pd
 import joblib
+import shap
+import numpy as np
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from contextlib import asynccontextmanager
 import logging
@@ -24,7 +26,9 @@ CLOUD_STORAGE_DIR = "/data"
 IS_CLOUD = os.path.exists(CLOUD_STORAGE_DIR)
 
 if IS_CLOUD:
-    logger.info("Dossier persistant Cloud détecté (/data). Activation du mode Production.")
+    logger.info(
+        "Dossier persistant Cloud détecté (/data). Activation du mode Production."
+    )
     LOG_DIR = os.path.join(CLOUD_STORAGE_DIR, "logs")
 else:
     logger.info("Utilisation des répertoires de développement locaux.")
@@ -44,11 +48,11 @@ def log_prediction(inputs: dict, outputs: dict, latency: float, status_code: int
         "status_code": status_code,
         "model_version": ml_artifacts.get("version", "unknown_version"),
     }
-    
+
     # 1. Stockage physique (Exigence Projet 8 - Screenshots)
     with open(LOG_FILE, "a") as f:
         f.write(json.dumps(log_entry) + "\n")
-    
+
     # 2. Sortie Standard (Best Practice Docker / Observabilité) Cette brique permet dans le cadre d'un déploiement de voir les logs dans le terminal ou Docker Logs
     logger.info(f"PRODUCTION_LOG: {json.dumps(log_entry)}")
 
@@ -83,7 +87,9 @@ async def lifespan(app: FastAPI):
     if IS_CLOUD and not os.path.exists(MODEL_PATH):
         original_model_path = os.path.join(BASE_DIR, "model", MODEL_FILENAME)
         if os.path.exists(original_model_path):
-            logger.info(f"Amorçage du Storage Bucket : Copie du modèle initial vers {MODEL_PATH}")
+            logger.info(
+                f"Amorçage du Storage Bucket : Copie du modèle initial vers {MODEL_PATH}"
+            )
             shutil.copy2(original_model_path, MODEL_PATH)
 
     if not os.path.exists(MODEL_PATH):
@@ -98,7 +104,14 @@ async def lifespan(app: FastAPI):
         ml_artifacts["features"] = artefact["features"]
         ml_artifacts["threshold"] = artefact["metrics"]["best_threshold"]
         ml_artifacts["version"] = datetime.now().isoformat()
-        
+
+        # Initialisation de SHAP (Mise en cache pour performances)
+        try:
+            ml_artifacts["explainer"] = shap.TreeExplainer(ml_artifacts["model"])
+        except Exception as e:
+            logger.warning(f"Impossible d'initialiser SHAP: {e}")
+            ml_artifacts["explainer"] = None
+
         logger.info(
             f"Modèle '{MODEL_FILENAME}' chargé avec {len(ml_artifacts['features'])} features (Top {len(ml_artifacts['features'])}). Seuil: {ml_artifacts['threshold']:.3f}. Version: {ml_artifacts['version']}"
         )
@@ -121,54 +134,71 @@ app = FastAPI(
 @app.get("/")
 def read_root():
     return {
-        "status": "ok", 
-        "message": "API de Scoring opérationnelle.", 
-        "model_version": ml_artifacts.get("version", "non chargé")
+        "status": "ok",
+        "message": "API de Scoring opérationnelle.",
+        "model_version": ml_artifacts.get("version", "non chargé"),
     }
-    
+
+
 @app.post("/admin/update_model")
 async def update_model(file: UploadFile = File(...)):
     """Route Admin pour mettre à jour le modèle à chaud (Hot-Swap) avec Zéro Downtime."""
-    if not file.filename.endswith('.joblib'):
-        raise HTTPException(status_code=400, detail="Le fichier doit être au format .joblib")
-    
+    if not file.filename.endswith(".joblib"):
+        raise HTTPException(
+            status_code=400, detail="Le fichier doit être au format .joblib"
+        )
+
     # 1. Sauvegarde physique (écrase l'ancien modèle)
     try:
         content = await file.read()
         with open(MODEL_PATH, "wb") as f:
             f.write(content)
-        logger.info(f"HOT-SWAP STEP 1 : Fichier {file.filename} sauvegardé sur {MODEL_PATH}")
+        logger.info(
+            f"HOT-SWAP STEP 1 : Fichier {file.filename} sauvegardé sur {MODEL_PATH}"
+        )
     except Exception as e:
         logger.error(f"Erreur d'écriture du modèle : {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erreur I/O: {str(e)}")
-        
+
     # 2. Re-chargement à chaud (Hot-Swap) dans la RAM
     try:
         nouveau_artefact = joblib.load(MODEL_PATH)
-        
+
         # Vérification basique d'intégrité
         if "model" not in nouveau_artefact or "features" not in nouveau_artefact:
-            raise ValueError("L'artefact ne contient pas les clés requises du Projet 8.")
-            
+            raise ValueError(
+                "L'artefact ne contient pas les clés requises du Projet 8."
+            )
+
         # Remplacement atomique dans le dictionnaire Singleton
         ml_artifacts["model"] = nouveau_artefact["model"]
         ml_artifacts["imputer"] = nouveau_artefact["imputer"]
         ml_artifacts["features"] = nouveau_artefact["features"]
         ml_artifacts["threshold"] = nouveau_artefact["metrics"]["best_threshold"]
         ml_artifacts["version"] = datetime.now().isoformat()
-        
-        logger.warning(f"⭐⭐ HOT-SWAP RÉUSSI ⭐⭐ Nouvelle version activée : {ml_artifacts['version']}")
+
+        try:
+            ml_artifacts["explainer"] = shap.TreeExplainer(ml_artifacts["model"])
+        except Exception as e:
+            logger.warning(f"Impossible d'initialiser SHAP post-hot-swap: {e}")
+            ml_artifacts["explainer"] = None
+
+        logger.warning(
+            f"HOT-SWAP RÉUSSI Nouvelle version activée : {ml_artifacts['version']}"
+        )
+
         return {
-            "status": "success", 
-            "message": "Bascule à chaud réussie.", 
+            "status": "success",
+            "message": "Bascule à chaud réussie.",
             "version": ml_artifacts["version"],
-            "n_features": len(ml_artifacts["features"])
+            "n_features": len(ml_artifacts["features"]),
         }
-        
+
     except Exception as e:
         logger.error(f"HOT-SWAP ÉCHEC : {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Le modèle est corrompu ou illisible : {str(e)}")
-
+        raise HTTPException(
+            status_code=500, detail=f"Le modèle est corrompu ou illisible : {str(e)}"
+        )
 
 
 @app.post("/predict")
@@ -193,12 +223,42 @@ def predict_credit(client: ClientData):
         prediction = 1 if proba_default >= threshold else 0
         status = "REFUSÉ" if prediction == 1 else "ACCORDÉ"
 
+        # Interprétabilité Locale (SHAP)
+        top_features = []
+        if ml_artifacts.get("explainer"):
+            try:
+                shap_vals = ml_artifacts["explainer"].shap_values(X_imputed)
+                # Gestion des différentes structures de retour selon l'algorithme (LightGBM vs autres)
+                if isinstance(shap_vals, list):
+                    client_shap = (
+                        shap_vals[1][0] if len(shap_vals) > 1 else shap_vals[0][0]
+                    )
+                elif len(shap_vals.shape) == 3:
+                    client_shap = shap_vals[0, :, 1]
+                else:
+                    client_shap = shap_vals[0]
+
+                # Extraction des Top 3 Impacts
+                feat_names = ml_artifacts["features"]
+                shap_dict = {
+                    feat_names[i]: float(client_shap[i]) for i in range(len(feat_names))
+                }
+                sorted_shap = sorted(
+                    shap_dict.items(), key=lambda x: abs(x[1]), reverse=True
+                )
+                top_features = [
+                    {"feature": k, "shap_value": v} for k, v in sorted_shap[:3]
+                ]
+            except Exception as e:
+                logger.error(f"Erreur de calcul SHAP: {e}")
+
         # Préparation réponse
         response_data = {
             "probability_default": float(proba_default),
             "threshold_used": float(threshold),
             "prediction": int(prediction),
             "status": status,
+            "top_features_impact": top_features,
         }
 
         # Logging de production (Monitoring)

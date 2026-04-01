@@ -169,30 +169,33 @@ def test_predict_generates_log_file():
             assert "latency_ms" in last_log
             assert last_log["inputs"]["AMT_INCOME_TOTAL"] == 100000
 
+
 def test_admin_update_model_success():
     """Vérifie que la route Hot-Swap accepte un .joblib et met à jour la version."""
     import shutil
-    
+
     # 1. On crée une copie temporaire de notre modèle pour simuler un upload
     temp_upload_path = MODEL_PATH + ".upload"
     if not os.path.exists(MODEL_PATH):
         pytest.skip(f"Modèle source manquant pour le test Hot-Swap: {MODEL_PATH}")
-        
+
     shutil.copy2(MODEL_PATH, temp_upload_path)
-    
+
     with TestClient(app) as client:
         with open(temp_upload_path, "rb") as f:
             response = client.post(
-                "/admin/update_model", 
-                files={"file": ("new_model.joblib", f, "application/octet-stream")}
+                "/admin/update_model",
+                files={"file": ("new_model.joblib", f, "application/octet-stream")},
             )
-            
+
         assert response.status_code == 200
         json_resp = response.json()
         assert json_resp["status"] == "success"
-        assert "Nouvelle version activée" in json_resp.get("message", "") or "Bascule à chaud réussie" in json_resp.get("message", "")
+        assert "Nouvelle version activée" in json_resp.get(
+            "message", ""
+        ) or "Bascule à chaud réussie" in json_resp.get("message", "")
         assert "version" in json_resp
-        
+
     # Nettoyage
     if os.path.exists(temp_upload_path):
         os.remove(temp_upload_path)

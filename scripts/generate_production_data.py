@@ -75,7 +75,9 @@ def generate_simulation():
 
     # 3. Imputation Médiane (Alignée sur la Production)
     print("Application de l'imputeur Médian (Artefact)...")
-    imputer = artefact["imputer"]# Imputation des valeurs manquantes par la médiane plutôt que KNN pour garantir un monitoring sans biais (Train-Serve Skew)
+    imputer = artefact[
+        "imputer"
+    ]  # Imputation des valeurs manquantes par la médiane plutôt que KNN pour garantir un monitoring sans biais (Train-Serve Skew)
     X_imputed_array = imputer.transform(X_final)
     X_imputed = pd.DataFrame(X_imputed_array, columns=target_features)
 
