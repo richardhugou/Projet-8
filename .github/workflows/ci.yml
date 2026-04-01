@@ -22,10 +22,10 @@ jobs:
         run: uv sync --all-extras --dev
       
       - name: Linter (Ruff)
-        run: uvx run ruff check
+        run: uvx ruff check
         
       - name: Formatter (Ruff)
-        run: uvx run ruff format --check
+        run: uvx ruff format --check
         
       - name: Exécution des tests avec couverture (Pytest-cov)
         run: uv run python3 -m pytest --cov=api tests/
