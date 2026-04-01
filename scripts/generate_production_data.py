@@ -4,7 +4,7 @@ import joblib
 import os
 import re
 from fastapi.testclient import TestClient
-from sklearn.impute import KNNImputer
+
 from api.main import app
 
 # Configuration
@@ -73,10 +73,12 @@ def generate_simulation():
 
     X_final = X_all[target_features].copy()
 
-    # 3. Imputation KNN (n_neighbors=5)
-    print("Application de KNNImputer (Calcul en cours)...")
-    imputer = KNNImputer(n_neighbors=5)
-    X_imputed_array = imputer.fit_transform(X_final)
+    # 3. Imputation Médiane (Alignée sur la Production)
+    print("Application de l'imputeur Médian (Artefact)...")
+    imputer = artefact[
+        "imputer"
+    ]  # Imputation des valeurs manquantes par la médiane plutôt que KNN pour garantir un monitoring sans biais (Train-Serve Skew)
+    X_imputed_array = imputer.transform(X_final)
     X_imputed = pd.DataFrame(X_imputed_array, columns=target_features)
 
     # 4. Envoi des requêtes à l'API via TestClient

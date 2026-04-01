@@ -1,0 +1,23 @@
+artifact_path: /home/trikwi/Documents/Projet 8/mlruns/1/models/m-03f78c725cc54d5fbb3c20fbdd145c44/artifacts
+flavors:
+  lightgbm:
+    code: null
+    data: model.pkl
+    lgb_version: 4.6.0
+    model_class: lightgbm.sklearn.LGBMClassifier
+    serialization_format: cloudpickle
+    skops_trusted_types: null
+  python_function:
+    data: model.pkl
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.lightgbm
+    python_version: 3.12.12
+mlflow_version: 3.10.1
+model_id: m-03f78c725cc54d5fbb3c20fbdd145c44
+model_size_bytes: 1073655
+model_uuid: m-03f78c725cc54d5fbb3c20fbdd145c44
+prompts: null
+run_id: 026881a60b2b4b7f893166a01ccb87e9
+utc_time_created: '2026-03-24 17:44:28.389693'

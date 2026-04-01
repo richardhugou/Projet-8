@@ -16,6 +16,10 @@ RUN uv sync --frozen --no-install-project --no-dev
 COPY api/ /app/api/
 COPY model/ /app/model/
 COPY README.md /app/
+COPY dashboard.py /app/
+COPY pages/ /app/pages/
+COPY monitoring/ /app/monitoring/
+COPY start.sh /app/
 
 # Installation finale du projet
 RUN uv sync --frozen --no-dev
@@ -36,8 +40,9 @@ COPY --from=builder /app /app
 # Ajout de l'environnement virtuel au PATH
 ENV PATH="/app/.venv/bin:$PATH"
 
-# Exposition du port FastAPI
+# Exposition du port public de Hugging Face (7860) et local (8000 interne)
+EXPOSE 7860
 EXPOSE 8000
 
-# Commande de démarrage
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Commande de démarrage (Lance FastAPI et Streamlit)
+CMD ["bash", "start.sh"]

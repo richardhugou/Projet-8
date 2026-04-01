@@ -1,8 +1,41 @@
-.DS_Store
-.venv/
+# Python
 __pycache__/
-*.pyc
-mlruns/
-logs/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# uv / venv
+.venv/
+uv.lock
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation Interne (Untracked)
 internal_doc/
-data/
+logs/*.jsonl
+.zip

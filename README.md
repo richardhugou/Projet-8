@@ -1,3 +1,13 @@
+---
+title: Credit Scoring API (Projet 8)
+emoji: 💳
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 8000
+pinned: false
+---
+
 # Prêt à Dépenser - Scoring de Crédit MLOps
 
 [![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
@@ -87,32 +97,5 @@ Pour exécuter la suite complète de 9 tests (API + Readiness) :
 uv run python3 -m pytest
 ```
 
-## Résumé des Commandes de Tests & Monitoring
-
-Pour valider l'intégralité du pipeline industriel, utilisez ces commandes :
-
-### 1. Audit de Qualité (Couverture des tests)
-```bash
-uv run env PYTHONPATH=. pytest --cov=api tests/ --cov-report=term-missing
-```
-- **Interprétation** : Le score `Cover %` indique la part du code de l'API réellement sollicitée. Un score de **90%+** est un excellent indicateur de robustesse. Les lignes signalées comme `Missing` ne subissent aucun test de sécurité.
-
-### 2. Simulation de Flux (1200 appels API)
-```bash
-uv run python3 scripts/generate_production_data.py
-```
-- **Interprétation** : Simule 3 blocs de 400 clients (Entraînement, Production, Drift). C'est le moteur qui "remplit" les logs de production pour l'analyse.
-
-### 3. Calcul de Drift (Moteur Evidently AI)
-```bash
-uv run python3 monitoring/drift_analysis.py
-```
-- **Interprétation** : Compare statistiquement les logs réels aux données de référence. Si une variable (ex: Revenu) dévie, un rapport HTML est généré dans `monitoring/reports/`. Si le score est élevé, la fiabilité du modèle est compromise.
-
-### 4. Cockpit de Monitoring (UI Streamlit)
-```bash
-uv run streamlit run monitoring/app.py
-```
-- **Interprétation** : Visualisation en temps réel de la santé de l'API. Surveillez la **Latence (cible < 50ms)** et la distribution des scores Accordé/Refusé pour détecter des anomalies de comportement "métier".
-
 ---
+*Projet réalisé dans le cadre du parcours Data Scientist - Projet n°8.*
