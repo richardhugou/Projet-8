@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import joblib
 import os
-from scripts.generate_production_data import prepare_raw_features
 
 # Configuration
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
