@@ -38,3 +38,4 @@ Thumbs.db
 # Documentation Interne (Untracked)
 internal_doc/
 logs/*.jsonl
+.zip
