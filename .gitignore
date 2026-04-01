@@ -23,7 +23,6 @@ wheels/
 
 # uv / venv
 .venv/
-uv.lock
 
 # IDEs
 .vscode/
