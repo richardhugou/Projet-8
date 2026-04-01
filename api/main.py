@@ -2,7 +2,6 @@ import os
 import pandas as pd
 import joblib
 import shap
-import numpy as np
 from fastapi import FastAPI, HTTPException, File, UploadFile
 from contextlib import asynccontextmanager
 import logging

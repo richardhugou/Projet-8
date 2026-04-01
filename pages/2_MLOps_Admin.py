@@ -4,7 +4,6 @@ import json
 import os
 import plotly.express as px
 import requests
-from datetime import datetime
 
 st.set_page_config(page_title="Tour de Contrôle MLOps", layout="wide")
 
@@ -40,7 +39,7 @@ def load_logs():
                         "model_version": entry.get("model_version", "unknown"),
                     }
                 )
-            except:
+            except Exception:
                 pass
     return pd.DataFrame(data)
 
@@ -60,8 +59,8 @@ try:
     if api_health.status_code == 200:
         current_version = api_health.json().get("model_version", "Inconnue")
         st.metric("Version de Modèle Active en Production", current_version)
-except:
-    st.error(f"Impossible de joindre l'API sur {API_URL}.")
+except Exception as e:
+    st.error(f"Impossible de joindre l'API sur {API_URL}. Erreur : {e}")
 
 uploaded_model = st.file_uploader(
     "Nouveau modèle à déployer (.joblib)", type=["joblib"]
