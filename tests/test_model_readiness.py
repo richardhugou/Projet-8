@@ -27,21 +27,3 @@ def test_essential_bricks_availability():
         assert True
     except ImportError as e:
         pytest.fail(f"Une brique essentielle est manquante : {e}")
-
-
-# ==============================================================================
-# PLACEHOLDERS POUR LA SUITE DE L'EXERCICE (Tests de prédiction métier)
-# ==============================================================================
-
-# TODO : Implémenter un test sur une dizaine de cas où le crédit doit être REFUSÉ
-# On visera des dossiers avec un fort taux d'endettement ou des scores EXT_SOURCE bas.
-# def test_predict_refusal_cases():
-#     pass
-
-# TODO : Implémenter un test sur une dizaine de cas où le crédit doit être ACCORDÉ
-# On visera des profils stables avec revenus élevés et garanties solides.
-# def test_predict_approval_cases():
-#     pass
-
-# TODO : Test de capacité de charge (Stress test léger)
-# Vérifier la réponse de l'API sur un lot de 100 requêtes consécutives.

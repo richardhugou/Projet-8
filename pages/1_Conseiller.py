@@ -124,7 +124,7 @@ def display_client_fiche(response_json):
             )
 
 
-# Moteur de Saisie Modulaire (Concept "Dual Workflow")
+# Moteur de Saisie Modulaire
 mode = st.radio(
     "Comment souhaitez-vous saisir le dossier ?",
     ["Saisie Manuelle Simplifiée", "Upload d'un Fichier Client (CSV)"],

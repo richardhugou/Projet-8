@@ -37,7 +37,7 @@ def test_api_handles_null_with_imputation():
     assert "status" in data
 
     print(
-        f"✅ Test API Null Handling : SUCCÈS (Status: {data['status']}, Proba: {data['probability_default']:.3f})"
+        f"Test API Null Handling : SUCCÈS (Status: {data['status']}, Proba: {data['probability_default']:.3f})"
     )
 
 
@@ -46,4 +46,4 @@ if __name__ == "__main__":
     try:
         test_api_handles_null_with_imputation()
     except Exception as e:
-        print(f"❌ Erreur lors du test : {e}")
+        print(f"Erreur lors du test : {e}")

@@ -66,9 +66,7 @@ def load_logs():
 
 df = load_logs()
 
-# ================================
-# SECTION 1: HOT SWAP ZERO DOWNTIME
-# ================================
+# Model Registry et stockkage dans la ram
 st.header("Model Registry & Hot-Swap (ZDT)")
 st.info(
     "Poussez un modèle `.joblib` entraîné. Il sera formaté, stocké physiquement et injecté atomiquement en Mémoire RAM, remplaçant l'ancien modèle sans couper le serveur !"
@@ -108,9 +106,7 @@ if uploaded_model is not None:
 
 st.markdown("---")
 
-# ================================
-# SECTION 2: KPIS & MONITORING
-# ================================
+# KPIS & MONITORING
 st.header("Statistiques d'Inférence")
 
 if df.empty:
@@ -154,9 +150,7 @@ else:
         fig_lat = px.box(df, x="model_version", y="latency", color="model_version")
         st.plotly_chart(fig_lat, use_container_width=True)
 
-# ================================
-# SECTION 2.5: ESPACE DEMONSTRATION (Spécial Soutenance pour tester le data drift)
-# ================================
+# ESPACE DEMONSTRATION (Spécial Soutenance pour tester le data drift)
 st.markdown("---")
 st.header("Espace Soutenance (Simulation de Crise)")
 with st.expander("Contrôles de Data Drift (Voir en action)", expanded=True):
@@ -260,9 +254,7 @@ with st.expander("Contrôles de Data Drift (Voir en action)", expanded=True):
             else:
                 st.warning("Aucune sauvegarde à restaurer.")
 
-# ================================
-# SECTION 3: EVIDENTLY DRIFT (RENDU NATIF STREAMLIT)
-# ================================
+# Data Drift
 st.markdown("---")
 st.header("Analyse de Data Drift (Native)")
 st.write(

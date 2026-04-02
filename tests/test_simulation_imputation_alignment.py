@@ -9,10 +9,6 @@ MODEL_PATH = os.path.join(BASE_DIR, "model", "scoring_model_50.joblib")
 
 
 def test_simulation_impute_alignment():
-    """
-    Vérifie que la simulation utilise l'imputer de l'artefact
-    et non une logique KNN externe.
-    """
     # 1. Chargement de l'imputeur réel
     if not os.path.exists(MODEL_PATH):
         print(f"Modèle non trouvé à {MODEL_PATH}, test ignoré.")

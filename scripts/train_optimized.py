@@ -235,7 +235,7 @@ def main():
 
     print("\nTous les modèles ont été générés avec succès.")
     
-    # Affichage du beau tableau récapitulatif
+    # Affichage tableau récapitulatif
     print("\n" + "="*80)
     print("BATAILLE FINALE DES MODÈLES (BANC D'ESSAI ET OPTIMISATION)")
     print("="*80)
