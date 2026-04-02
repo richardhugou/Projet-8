@@ -7,6 +7,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
     roc_auc_score,
     confusion_matrix,
+    recall_score,
+    precision_score,
+    f1_score,
 )
 from sklearn.impute import SimpleImputer
 from imblearn.over_sampling import SMOTE
@@ -134,13 +137,24 @@ def run_training(df_full, top_n, output_path, experiment_name="Projet8_CreditSco
         tn, fp, fn, tp = cm.ravel() if cm.shape == (2, 2) else (0, 0, 0, 0)
 
         auc = roc_auc_score(y_val, y_proba)
+        
+        # Calcul des nouvelles métriques
+        if cm.shape == (2, 2):
+            recall = recall_score(y_val, y_pred_best)
+            precision = precision_score(y_val, y_pred_best)
+            f1 = f1_score(y_val, y_pred_best)
+        else:
+            recall, precision, f1 = 0, 0, 0
 
         mlflow.log_metric("best_threshold", best_threshold)
         mlflow.log_metric("min_business_cost", min_cost)
         mlflow.log_metric("roc_auc", auc)
+        mlflow.log_metric("recall", recall)
+        mlflow.log_metric("precision", precision)
+        mlflow.log_metric("f1_score", f1)
         mlflow.lightgbm.log_model(final_model, "model")
 
-        print(f"Top {top_n} - ROC AUC : {auc:.4f}, Seuil : {best_threshold:.3f}")
+        print(f"Top {top_n} - ROC AUC : {auc:.4f}, Seuil : {best_threshold:.3f}, Coût Métier : {min_cost}$")
 
         # Sauvegarde de l'artefact complet
         export_dict = {
@@ -152,11 +166,26 @@ def run_training(df_full, top_n, output_path, experiment_name="Projet8_CreditSco
                 "best_threshold": best_threshold,
                 "min_business_cost": min_cost,
                 "roc_auc": auc,
+                "recall": recall,
+                "precision": precision,
+                "f1_score": f1,
                 "training_time": train_time,
             },
         }
         joblib.dump(export_dict, output_path)
-        print(f"✅ Modèle sauvegardé : {output_path}")
+        print(f"Modèle sauvegardé : {output_path}")
+
+        # On retourne un dictionnaire de synthèse pour le tableau final
+        return {
+            "Features": f"Top {top_n}",
+            "Temps R-Train (s)": round(train_time, 2),
+            "Coût Métier (Total)": f"{int(min_cost)} $",
+            "Seuil d'Octroi": round(best_threshold, 3),
+            "AUC-ROC": round(auc, 4),
+            "Recall": round(recall, 4),
+            "Précision": round(precision, 4),
+            "F1 Score": round(f1, 4)
+        }
 
 
 def main():
@@ -190,20 +219,29 @@ def main():
     df["CREDIT_TERM"] = df["AMT_ANNUITY"] / df["AMT_CREDIT"]
 
     # Lancement des deux entraînements
-    run_training(df, 15, os.path.join(MODEL_DIR, "scoring_model_15.joblib"))
-    run_training(df, 50, os.path.join(MODEL_DIR, "scoring_model_50.joblib"))
+    results = []
+    res_15 = run_training(df, 15, os.path.join(MODEL_DIR, "scoring_model_15.joblib"))
+    results.append(res_15)
+    
+    res_50 = run_training(df, 50, os.path.join(MODEL_DIR, "scoring_model_50.joblib"))
+    results.append(res_50)
 
     # Mise à jour du lien symbolique ou du fichier par défaut si nécessaire
-    # Par défaut, on garde scoring_model.joblib pointant vers le 50 pour la rétro-compatibilité
-    # ou on écrase le 50 sur scoring_model.joblib
     import shutil
-
     shutil.copy(
         os.path.join(MODEL_DIR, "scoring_model_50.joblib"),
         os.path.join(MODEL_DIR, "scoring_model.joblib"),
     )
 
-    print("\n✅ Tous les modèles ont été générés avec succès.")
+    print("\nTous les modèles ont été générés avec succès.")
+    
+    # Affichage du beau tableau récapitulatif
+    print("\n" + "="*80)
+    print("BATAILLE FINALE DES MODÈLES (BANC D'ESSAI ET OPTIMISATION)")
+    print("="*80)
+    df_results = pd.DataFrame(results)
+    print(df_results.to_markdown(index=False))
+    print("="*80 + "\n")
 
 
 if __name__ == "__main__":

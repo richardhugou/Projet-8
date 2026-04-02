@@ -38,3 +38,9 @@ Thumbs.db
 internal_doc/
 logs/*.jsonl
 .zip
+
+# Expérimentations Projet 6 (Démo Soutenance Uniquement)
+mlruns/
+scripts/1_compare_baselines.py
+scripts/2_run_optuna.py
+scripts/train_optimized.pymlflow.db
