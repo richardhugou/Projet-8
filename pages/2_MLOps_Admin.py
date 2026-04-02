@@ -2,13 +2,13 @@ import streamlit as st
 import pandas as pd
 import json
 import os
+import shutil
 import plotly.express as px
 import requests
 
 st.set_page_config(page_title="Tour de Contrôle MLOps", layout="wide")
 
 API_URL = "http://localhost:8000"
-import shutil
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
