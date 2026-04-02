@@ -7,10 +7,29 @@ from evidently import DataDefinition
 from evidently import Report
 from evidently.presets import DataDriftPreset
 
+import shutil
+
 # Configuration
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LOG_FILE = os.path.join(BASE_DIR, "logs", "production_inference.jsonl")
-REPORT_DIR = os.path.join(BASE_DIR, "monitoring", "reports")
+CLOUD_STORAGE_DIR = "/data"
+IS_CLOUD = os.path.exists(CLOUD_STORAGE_DIR)
+
+if IS_CLOUD:
+    LOG_DIR = os.path.join(CLOUD_STORAGE_DIR, "logs")
+    REPORT_DIR = os.path.join(CLOUD_STORAGE_DIR, "reports")
+else:
+    LOG_DIR = os.path.join(BASE_DIR, "logs")
+    REPORT_DIR = os.path.join(BASE_DIR, "monitoring", "reports")
+
+LOG_FILE = os.path.join(LOG_DIR, "production_inference.jsonl")
+
+# --- AMORÇAGE CLOUD DES LOGS ---
+if IS_CLOUD and not os.path.exists(LOG_FILE):
+    os.makedirs(LOG_DIR, exist_ok=True)
+    orig_logs = os.path.join(BASE_DIR, "logs", "production_inference.jsonl")
+    if os.path.exists(orig_logs):
+        shutil.copy2(orig_logs, LOG_FILE)
+
 os.makedirs(REPORT_DIR, exist_ok=True)
 
 

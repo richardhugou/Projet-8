@@ -8,10 +8,30 @@ import requests
 st.set_page_config(page_title="Tour de Contrôle MLOps", layout="wide")
 
 API_URL = "http://localhost:8000"
+import shutil
+
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-LOG_FILE = os.path.join(BASE_DIR, "logs", "production_inference.jsonl")
-REPORT_HTML = os.path.join(BASE_DIR, "monitoring", "reports", "drift_report.html")
-REPORT_JSON = os.path.join(BASE_DIR, "monitoring", "reports", "drift_report.json")
+
+CLOUD_STORAGE_DIR = "/data"
+IS_CLOUD = os.path.exists(CLOUD_STORAGE_DIR)
+
+if IS_CLOUD:
+    LOG_DIR = os.path.join(CLOUD_STORAGE_DIR, "logs")
+    REPORT_DIR = os.path.join(CLOUD_STORAGE_DIR, "reports")
+else:
+    LOG_DIR = os.path.join(BASE_DIR, "logs")
+    REPORT_DIR = os.path.join(BASE_DIR, "monitoring", "reports")
+
+LOG_FILE = os.path.join(LOG_DIR, "production_inference.jsonl")
+REPORT_HTML = os.path.join(REPORT_DIR, "drift_report.html")
+REPORT_JSON = os.path.join(REPORT_DIR, "drift_report.json")
+
+# Amorçage dynamique sur le Cloud (pour ne pas perdre les 1200 logs initiaux de référence au boot)
+if IS_CLOUD and not os.path.exists(LOG_FILE):
+    os.makedirs(LOG_DIR, exist_ok=True)
+    orig_logs = os.path.join(BASE_DIR, "logs", "production_inference.jsonl")
+    if os.path.exists(orig_logs):
+        shutil.copy2(orig_logs, LOG_FILE)
 
 st.title("Tour de Contrôle MLOps")
 st.success("Accès Administrateur Autorisé.")
@@ -81,7 +101,6 @@ if uploaded_model is not None:
                     st.success(
                         f"Opération Réussie ! L'API tourne désormais sur la version : {res.json()['version']}"
                     )
-                    st.balloons()
                 else:
                     st.error(f"Échec ({res.status_code}) : {res.text}")
             except Exception as e:
@@ -209,7 +228,7 @@ with st.expander("Contrôles de Data Drift (Voir en action)", expanded=True):
                 with open(LOG_FILE, "a") as f:
                     f.writelines(drifted_lines)
                 st.success(
-                    f"{len(drifted_lines)} fausses transactions injectées ! Étape suivante ➡️ Mettre à jour."
+                    f"{len(drifted_lines)} fausses transactions injectées ! Étape suivante : Mettre à jour."
                 )
 
     with col_d2:
@@ -226,7 +245,7 @@ with st.expander("Contrôles de Data Drift (Voir en action)", expanded=True):
                     st.error(f"Erreur d'analyse: {e}")
 
     with col_d3:
-        if st.button("🧹 Réinitialiser (Effacer le Drift)", use_container_width=True):
+        if st.button("Réinitialiser (Effacer le Drift)", use_container_width=True):
             if os.path.exists(LOG_FILE + ".bak"):
                 import shutil
 
