@@ -136,6 +136,112 @@ else:
         st.plotly_chart(fig_lat, use_container_width=True)
 
 # ================================
+# SECTION 2.5: ESPACE DEMONSTRATION (Spécial Soutenance pour tester le data drift)
+# ================================
+st.markdown("---")
+st.header("Espace Soutenance (Simulation de Crise)")
+with st.expander("Contrôles de Data Drift (Voir en action)", expanded=True):
+    st.info(
+        "Utilisez ces contrôles lors de la soutenance pour prouver la capacité du système à alerter l'équipe de supervision en cas de dégradation des conditions du marché."
+    )
+
+    col_d1, col_d2, col_d3 = st.columns(3)
+
+    with col_d1:
+        if st.button("Injecter un Trafic Aberrant", use_container_width=True):
+            if os.path.exists(LOG_FILE):
+                # 1. Sauvegarde fantôme silencieuse (Back-up)
+                import shutil
+
+                if not os.path.exists(LOG_FILE + ".bak"):
+                    shutil.copy(LOG_FILE, LOG_FILE + ".bak")
+
+                # 2. Clonage et Altération Mathématique (dans le scope Pydantic)
+                import random
+                from datetime import datetime, timezone
+
+                with open(LOG_FILE, "r") as f:
+                    lines = f.readlines()
+
+                drifted_lines = []
+                for line in lines[-300:]:  # On prend 300 inférences récentes au hasard
+                    try:
+                        entry = json.loads(line)
+                        inputs = entry.get("inputs", {})
+
+                        # Simulation de crise sévère : Variation de ~1000% (x10) sur 5 features
+                        if (
+                            "AMT_INCOME_TOTAL" in inputs
+                            and inputs["AMT_INCOME_TOTAL"] is not None
+                        ):
+                            inputs["AMT_INCOME_TOTAL"] *= random.uniform(9.0, 11.0)
+                        if "AMT_CREDIT" in inputs and inputs["AMT_CREDIT"] is not None:
+                            inputs["AMT_CREDIT"] *= random.uniform(9.0, 11.0)
+                        if (
+                            "AMT_ANNUITY" in inputs
+                            and inputs["AMT_ANNUITY"] is not None
+                        ):
+                            inputs["AMT_ANNUITY"] *= random.uniform(9.0, 11.0)
+                        if (
+                            "DAYS_EMPLOYED" in inputs
+                            and inputs["DAYS_EMPLOYED"] is not None
+                        ):
+                            inputs["DAYS_EMPLOYED"] *= random.uniform(9.0, 11.0)
+                        if (
+                            "EXT_SOURCE_1" in inputs
+                            and inputs["EXT_SOURCE_1"] is not None
+                        ):
+                            # EXT_SOURCE sont entre 0 et 1 habituellement
+                            inputs["EXT_SOURCE_1"] *= random.uniform(9.0, 11.0)
+
+                        entry["inputs"] = inputs
+                        entry["timestamp"] = datetime.now(timezone.utc).isoformat()
+                        # Pour visualiser la fausse requête, on flag le modèle
+                        entry["model_version"] = (
+                            entry.get("model_version", "v1") + " (Simulé)"
+                        )
+
+                        drifted_lines.append(json.dumps(entry) + "\n")
+                    except Exception:
+                        pass
+
+                # 3. Écriture (Append)
+                with open(LOG_FILE, "a") as f:
+                    f.writelines(drifted_lines)
+                st.success(
+                    f"{len(drifted_lines)} fausses transactions injectées ! Étape suivante ➡️ Mettre à jour."
+                )
+
+    with col_d2:
+        if st.button(
+            "Recalculer le Rapport Evidently", use_container_width=True, type="primary"
+        ):
+            with st.spinner("Analyse Statistique de Dérive en cours..."):
+                try:
+                    from monitoring.drift_analysis import run_drift_analysis
+
+                    run_drift_analysis()
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erreur d'analyse: {e}")
+
+    with col_d3:
+        if st.button("🧹 Réinitialiser (Effacer le Drift)", use_container_width=True):
+            if os.path.exists(LOG_FILE + ".bak"):
+                import shutil
+
+                shutil.copy(LOG_FILE + ".bak", LOG_FILE)
+                from monitoring.drift_analysis import run_drift_analysis
+
+                run_drift_analysis()
+                # On supprime le bak pour permettre une nouvelle sauvegarde la prochaine fois
+                os.remove(LOG_FILE + ".bak")
+                st.success("Restitution des logs originaux !")
+                st.rerun()
+            else:
+                st.warning("Aucune sauvegarde à restaurer.")
+
+# ================================
 # SECTION 3: EVIDENTLY DRIFT (RENDU NATIF STREAMLIT)
 # ================================
 st.markdown("---")
@@ -177,7 +283,7 @@ if os.path.exists(REPORT_JSON):
                         {
                             "Variable Impactée": col_name,
                             "Risque de Dérive (p-value)": f"{p_val:.5f}",
-                            "Statut": "🚨 DÉRIVE DÉTECTÉE",
+                            "Statut": "DÉRIVE DÉTECTÉE",
                         }
                     )
 
