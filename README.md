@@ -62,7 +62,7 @@ uv run uvicorn api.main:app --reload
 ```
 Accédez à la documentation interactive : [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
-### 3. Lancer le Dashboard de Monitoring (Phase 6)
+### 3. Lancer le Dashboard de Monitoring
 ```bash
 uv run streamlit run monitoring/app.py
 ```
