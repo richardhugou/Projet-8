@@ -176,9 +176,10 @@ async def update_model(file: UploadFile = File(...)):
                 "L'artefact ne contient pas la clé metrics['best_threshold']."
             )
 
-        if not isinstance(nouveau_artefact["features"], list) or not nouveau_artefact[
-            "features"
-        ]:
+        if (
+            not isinstance(nouveau_artefact["features"], list)
+            or not nouveau_artefact["features"]
+        ):
             raise ValueError("La liste des features est invalide ou vide.")
 
         # Remplacement atomique du modèle actif sur disque

@@ -128,7 +128,9 @@ def main() -> None:
     report = classification_report(y_val, y_pred, output_dict=True)
 
     confusion_counts = np.array([[tn, fp], [fn, tp]], dtype=int)
-    cost_matrix = np.array([[0, fp * args.cost_fp], [fn * args.cost_fn, 0]], dtype=float)
+    cost_matrix = np.array(
+        [[0, fp * args.cost_fp], [fn * args.cost_fn, 0]], dtype=float
+    )
 
     confusion_heatmap_path = Path(args.confusion_heatmap_path)
     confusion_heatmap_path.parent.mkdir(parents=True, exist_ok=True)
