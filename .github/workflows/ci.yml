@@ -19,7 +19,7 @@ jobs:
           version: "latest"
 
       - name: Installer les dépendances
-        run: uv sync --all-extras --dev
+        run: uv sync --dev --frozen
       
       - name: Linter (Ruff)
         run: uvx ruff check
@@ -40,32 +40,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
           lfs: true
       
       - name: Push to Hub
         env:
             HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-            # 1. On supprime l'historique Git (qui contient des csv >10MB sans LFS natif)
-            rm -rf .git
-            git config --global user.email "actions@github.com"
-            git config --global user.name "GitHub Actions"
-            
-            # 2. On recrée un dépôt tout neuf juste pour Hugging Face
-            git init
-            git checkout -b main
-            
-            # 3. On force Git LFS sur les gros fichiers potentiels avant l'ajout
-            git lfs install
-            git lfs track "*.csv"
-            git lfs track "*.joblib"
-            git add .gitattributes
-            
-            # 4. On nettoie tout ce qui n'a rien a faire en PRODUCTION
-            rm -rf data/ tests/ notebooks/ .pytest_cache/ mlruns/ docs/ internal_doc/ || true
-            
-            # 5. On commit la photo finale et on propulse
-            git add .
-            git commit -m "🚀 Déploiement CI/CD"
-            git push --force https://trikwi:$HF_TOKEN@huggingface.co/spaces/trikwi/ScoringP8 main
+          set -euo pipefail
+
+          # 1. On supprime l'historique Git (qui contient des csv >10MB sans LFS natif)
+          rm -rf .git
+          git config --global user.email "actions@github.com"
+          git config --global user.name "GitHub Actions"
+
+          # 2. On recrée un dépôt tout neuf juste pour Hugging Face
+          git init
+          git checkout -b main
+
+          # 3. On force Git LFS sur les gros fichiers potentiels avant l'ajout
+          git lfs install
+          git lfs track "*.csv"
+          git lfs track "*.joblib"
+          git add .gitattributes
+
+          # 4. PRODUCTION
+          rm -rf data/ tests/ .pytest_cache/ mlruns/ internal_doc/ || true
+
+          # 5. On commit et push sur Hugging Face
+          git add .
+          git commit -m "Déploiement CI/CD"
+          git push --force https://trikwi:$HF_TOKEN@huggingface.co/spaces/trikwi/ScoringP8 main

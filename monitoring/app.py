@@ -67,7 +67,7 @@ with st.sidebar:
         st.rerun()
 
 # --- MAIN CONTENT ---
-st.title("Dashboard de Monitoring - Prêt à Dépenser")
+st.title("Prêt à Dépenser")
 st.markdown("---")
 
 df = load_data()

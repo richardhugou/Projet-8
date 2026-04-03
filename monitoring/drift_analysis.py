@@ -37,7 +37,7 @@ def run_drift_analysis():
     print("--- Analyse de Drift (Evidently v0.7.x Officiel) ---")
 
     if not os.path.exists(LOG_FILE):
-        print(f"❌ Erreur : Fichier logs absent {LOG_FILE}")
+        print(f"Erreur : Fichier logs absent {LOG_FILE}")
         return
 
     # 1. Chargement des logs
@@ -72,7 +72,7 @@ def run_drift_analysis():
     html_path = os.path.join(REPORT_DIR, "drift_report.html")
     my_eval.save_html(html_path)
 
-    print("✅ Analyse terminée avec succès.")
+    print("Analyse terminée avec succès.")
     print(f"Rapport JSON : {json_path}")
     print(f"Rapport HTML : {html_path}")
 
