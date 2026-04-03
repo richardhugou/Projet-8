@@ -62,7 +62,7 @@ def log_prediction(inputs: dict, outputs: dict, latency: float, status_code: int
 # à chaque requête, évitant ainsi des chargements disque/CPU coûteux.
 ml_artifacts = {}
 
-MODEL_FILENAME = os.getenv("SCORING_MODEL_FILENAME", "scoring_model.joblib")
+MODEL_FILENAME = os.getenv("SCORING_MODEL_FILENAME", "optuna_scoring_model.joblib")
 
 if IS_CLOUD:
     MODEL_DIR = os.path.join(CLOUD_STORAGE_DIR, "model")
