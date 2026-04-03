@@ -8,7 +8,7 @@ import logging
 import json
 import time
 import shutil
-from datetime import datetime
+from datetime import datetime, timezone
 
 from api.schemas import ClientData
 
@@ -40,7 +40,7 @@ LOG_FILE = os.path.join(LOG_DIR, "production_inference.jsonl")
 def log_prediction(inputs: dict, outputs: dict, latency: float, status_code: int = 200):
     """Enregistre une ligne de log structurée en JSON (Fichier + Console)."""
     log_entry = {
-        "timestamp": datetime.now().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "inputs": inputs,
         "outputs": outputs,
         "latency_ms": round(latency * 1000, 2),
@@ -102,7 +102,7 @@ async def lifespan(app: FastAPI):
         ml_artifacts["imputer"] = artefact["imputer"]
         ml_artifacts["features"] = artefact["features"]
         ml_artifacts["threshold"] = artefact["metrics"]["best_threshold"]
-        ml_artifacts["version"] = datetime.now().isoformat()
+        ml_artifacts["version"] = datetime.now(timezone.utc).isoformat()
 
         # Initialisation de SHAP (Mise en cache pour performances)
         try:
@@ -147,34 +147,49 @@ async def update_model(file: UploadFile = File(...)):
             status_code=400, detail="Le fichier doit être au format .joblib"
         )
 
-    # 1. Sauvegarde physique (écrase l'ancien modèle)
+    temp_model_path = MODEL_PATH + ".tmp"
+
+    # 1. Sauvegarde temporaire (ne touche pas le modèle actif)
     try:
         content = await file.read()
-        with open(MODEL_PATH, "wb") as f:
+        with open(temp_model_path, "wb") as f:
             f.write(content)
         logger.info(
-            f"HOT-SWAP STEP 1 : Fichier {file.filename} sauvegardé sur {MODEL_PATH}"
+            f"HOT-SWAP STEP 1 : Fichier {file.filename} sauvegardé en temporaire sur {temp_model_path}"
         )
     except Exception as e:
         logger.error(f"Erreur d'écriture du modèle : {str(e)}")
         raise HTTPException(status_code=500, detail=f"Erreur I/O: {str(e)}")
 
-    # 2. Re-chargement à chaud (Hot-Swap) dans la RAM
+    # 2. Validation complète avant remplacement du modèle actif
     try:
-        nouveau_artefact = joblib.load(MODEL_PATH)
+        nouveau_artefact = joblib.load(temp_model_path)
 
-        # Vérification basique d'intégrité
-        if "model" not in nouveau_artefact or "features" not in nouveau_artefact:
+        # Vérification d'intégrité minimale de l'artefact
+        required_keys = {"model", "imputer", "features", "metrics"}
+        if not required_keys.issubset(nouveau_artefact.keys()):
+            missing = sorted(required_keys.difference(set(nouveau_artefact.keys())))
+            raise ValueError(f"L'artefact est incomplet. Clés manquantes : {missing}")
+
+        if "best_threshold" not in nouveau_artefact["metrics"]:
             raise ValueError(
-                "L'artefact ne contient pas les clés requises du Projet 8."
+                "L'artefact ne contient pas la clé metrics['best_threshold']."
             )
+
+        if not isinstance(nouveau_artefact["features"], list) or not nouveau_artefact[
+            "features"
+        ]:
+            raise ValueError("La liste des features est invalide ou vide.")
+
+        # Remplacement atomique du modèle actif sur disque
+        os.replace(temp_model_path, MODEL_PATH)
 
         # Remplacement atomique dans le dictionnaire Singleton
         ml_artifacts["model"] = nouveau_artefact["model"]
         ml_artifacts["imputer"] = nouveau_artefact["imputer"]
         ml_artifacts["features"] = nouveau_artefact["features"]
         ml_artifacts["threshold"] = nouveau_artefact["metrics"]["best_threshold"]
-        ml_artifacts["version"] = datetime.now().isoformat()
+        ml_artifacts["version"] = datetime.now(timezone.utc).isoformat()
 
         try:
             ml_artifacts["explainer"] = shap.TreeExplainer(ml_artifacts["model"])
@@ -194,6 +209,8 @@ async def update_model(file: UploadFile = File(...)):
         }
 
     except Exception as e:
+        if os.path.exists(temp_model_path):
+            os.remove(temp_model_path)
         logger.error(f"HOT-SWAP ÉCHEC : {str(e)}")
         raise HTTPException(
             status_code=500, detail=f"Le modèle est corrompu ou illisible : {str(e)}"

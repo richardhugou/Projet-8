@@ -3,10 +3,11 @@ import requests
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
+import os
 
 st.set_page_config(page_title="Espace Conseiller", layout="wide")
 
-API_URL = "http://localhost:8000"  # Port par défaut de notre FastAPI Dockerisé
+API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 st.title("Espace Conseiller Clientèle")
 st.markdown("---")

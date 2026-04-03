@@ -8,7 +8,7 @@ import requests
 
 st.set_page_config(page_title="Tour de Contrôle MLOps", layout="wide")
 
-API_URL = "http://localhost:8000"
+API_URL = os.getenv("API_URL", "http://localhost:8000")
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 

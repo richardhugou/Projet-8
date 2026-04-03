@@ -86,8 +86,11 @@ Toutes les données entrantes sont vérifiées par `api/schemas.py`. Si une donn
 Pour construire et lancer l'image de production :
 ```bash
 docker build -t credit-scoring-api .
-docker run -p 8000:8000 credit-scoring-api
+docker run -p 7860:7860 -p 8000:8000 credit-scoring-api
 ```
+
+- Dashboard Streamlit (interface publique) : http://127.0.0.1:7860
+- API FastAPI (accès technique/local) : http://127.0.0.1:8000/docs
 
 ---
 
