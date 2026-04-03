@@ -10,6 +10,7 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .ipynb_checkpoints/
+.ipynb
 
 # Projet (Fichiers volumineux ou inutiles en prod)
 data/

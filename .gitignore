@@ -34,13 +34,14 @@ wheels/
 .DS_Store
 Thumbs.db
 
-# Documentation Interne (Untracked)
+# Documentation interne (archive)
 internal_doc/
 logs/*.jsonl
 .zip
-
+.ipynb
 # Expérimentations Projet 6 (Démo Soutenance Uniquement)
 mlruns/
 scripts/1_compare_baselines.py
 scripts/2_run_optuna.py
-scripts/train_optimized.pymlflow.db
+scripts/train_optimized.py
+mlflow.db
